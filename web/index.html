@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baby Image Generator - Tạo ảnh em bé từ siêu âm</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="app-header">
+            <h1>Tạo ảnh em bé từ siêu âm</h1>
+            <p class="subtitle">Công nghệ AI tiên tiến để tạo ra hình ảnh em bé từ ảnh siêu âm</p>
+        </header>
+
+        <!-- Main Application -->
+        <main class="app-main">
+            <!-- Welcome Screen -->
+            <div id="welcome-screen" class="screen active">
+                <div class="welcome-content">
+                    
+                    <h2>Chào mừng đến với Baby Image Generator</h2>
+                    <p class="instructions">
+                        Tải lên ảnh siêu âm của bạn và xem quy trình xử lý 7 kênh màu để tạo ra hình ảnh em bé. 
+                        Ứng dụng hỗ trợ các định dạng: JPG, JPEG, PNG, WEBP.
+                    </p>
+                    <div class="features-list">
+                        <div class="feature-item"><span>Xử lý ảnh chuyên nghiệp 7 kênh</span></div>
+                        <div class="feature-item"><span>Công nghệ AI tiên tiến</span></div>
+                        <div class="feature-item"><span>Kết quả chất lượng cao</span></div>
+                    </div>
+                    <button class="btn btn--primary btn--lg" onclick="showUploadScreen()">
+                        Bắt đầu ngay
+                    </button>
+                </div>
+            </div>
+
+            <!-- Upload Screen -->
+            <div id="upload-screen" class="screen">
+                <div class="upload-section">
+                    <h2>Tải lên ảnh siêu âm</h2>
+                    <div class="upload-area" id="upload-area">
+                        <div class="upload-content">
+                            <p class="upload-text">Kéo thả ảnh vào đây hoặc <span class="upload-link">chọn file</span></p>
+                            <p class="upload-info">Hỗ trợ: JPG, JPEG, PNG, WEBP (tối đa 10MB)</p>
+                        </div>
+                        <input type="file" id="file-input" accept=".jpg,.jpeg,.png,.webp" style="display: none;">
+                    </div>
+                    
+                    <!-- Image Preview -->
+                    <div id="image-preview" class="image-preview" style="display: none;">
+                        <h3>Xem trước ảnh</h3>
+                        <div class="preview-container">
+                            <img id="preview-image" alt="Preview">
+                            <div class="preview-info">
+                                <div class="file-info">
+                                    <span id="file-name"></span>
+                                    <span id="file-size"></span>
+                                </div>
+                                <button class="btn btn--primary" onclick="startProcessing()">
+                                    Bắt đầu xử lý
+                                </button>
+                                <button class="btn btn--secondary" onclick="resetUpload()">
+                                    Chọn ảnh khác
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Processing Screen -->
+            <div id="processing-screen" class="screen">
+                <div class="processing-section">
+                    <h2>Đang xử lý ảnh siêu âm</h2>
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                        <div class="progress-text">
+                            <span id="current-step">Bước 1/7</span>
+                            <span id="progress-percent">0%</span>
+                        </div>
+                    </div>
+
+                    <!-- Processing Steps -->
+                    <div class="processing-steps">
+                        <div class="step-info">
+                            <h3 id="step-title">Đang chuẩn bị...</h3>
+                            <p id="step-description">Khởi tạo quá trình xử lý ảnh</p>
+                            <p class="technical-info" id="step-technical">Chuẩn bị dữ liệu đầu vào</p>
+                        </div>
+                        
+                        <div class="processing-display">
+                            <div class="image-container">
+                                <div class="image-wrapper">
+                                    <canvas id="processing-canvas" width="400" height="300"></canvas>
+                                    <div class="processing-overlay" id="processing-overlay">
+                                        <div class="spinner"></div>
+                                        <p>Đang xử lý...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Generation Screen -->
+            <div id="ai-generation-screen" class="screen">
+                <div class="ai-generation-section">
+                    <h2>Tạo ảnh em bé bằng AI</h2>
+                    <div class="ai-progress">
+                        <div class="ai-animation">
+                            <div class="neural-network">
+                                <div class="node"></div>
+                                <div class="node"></div>
+                                <div class="node"></div>
+                                <div class="node"></div>
+                                <div class="connection"></div>
+                                <div class="connection"></div>
+                                <div class="connection"></div>
+                            </div>
+                        </div>
+                        <div class="ai-status">
+                            <h3 id="ai-status-title">Đang phân tích dữ liệu...</h3>
+                            <p id="ai-status-desc">AI đang xử lý 7 kênh dữ liệu để tạo ra hình ảnh em bé</p>
+                            <div class="ai-settings">
+                                <div class="setting-item">
+                                    <span>Số bước: 50</span>
+                                </div>
+                                <div class="setting-item">
+                                    <span>CFG Scale: 8.5</span>
+                                </div>
+                                <div class="setting-item">
+                                    <span>Phong cách: Professional baby portrait</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result Screen -->
+            <div id="result-screen" class="screen">
+                <div class="result-section">
+                    <h2>Kết quả</h2>
+                    <div class="result-container">
+                        <div class="result-images">
+                            <div class="image-comparison">
+                                <div class="comparison-item">
+                                    <h4>Ảnh siêu âm gốc</h4>
+                                    <div class="image-wrapper">
+                                        <canvas id="original-result-canvas" width="300" height="225"></canvas>
+                                    </div>
+                                </div>
+                                
+                                <div class="comparison-item">
+                                    <h4>Ảnh em bé được tạo</h4>
+                                    <div class="image-wrapper">
+                                        <canvas id="generated-result-canvas" width="300" height="225"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="result-actions">
+                            <button class="btn btn--primary btn--lg" onclick="downloadResult()">Tải xuống kết quả</button>
+                            <button class="btn btn--secondary btn--lg" onclick="processNewImage()">
+                                Xử lý ảnh mới
+                            </button>
+                        </div>
+
+                        <div class="result-info">
+                            <div class="info-card">
+                                <h4>Thông tin kỹ thuật</h4>
+                                <ul>
+                                    <li>Đã xử lý 7 kênh màu</li>
+                                    <li>Sử dụng Enhanced Canny Edge Detection</li>
+                                    <li>Phân tích RGB và HSV color space</li>
+                                    <li>AI generation với 50 steps</li>
+                                    <li>Chất lượng: Professional baby portrait</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Settings Panel -->
+        <div class="settings-panel" id="settings-panel">
+            <div class="settings-header">
+                <h3>Cài đặt</h3>
+                <button class="close-settings" onclick="closeSettings()">×</button>
+            </div>
+            <div class="settings-body">
+                <div class="setting-group">
+                    <label>Tốc độ xử lý</label>
+                    <select id="processing-speed">
+                        <option value="fast">Nhanh (1s/bước)</option>
+                        <option value="normal" selected>Bình thường (2s/bước)</option>
+                        <option value="slow">Chậm (3s/bước)</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label>Chất lượng hiển thị</label>
+                    <select id="display-quality">
+                        <option value="high" selected>Cao</option>
+                        <option value="medium">Trung bình</option>
+                        <option value="low">Thấp</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Button -->
+        <button class="settings-btn" onclick="openSettings()">Cài đặt</button>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
