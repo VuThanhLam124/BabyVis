@@ -72,7 +72,8 @@ class BatchImageProcessor:
             valid_paths,
             output_dir=self.config["output_directory"],
             delay_sec=self.config["delay_seconds"],
-            generate_predictions=self.config["generate_predictions"]
+            generate_predictions=self.config["generate_predictions"],
+            backend="controlnet"  # Use stable ControlNet backend by default
         )
         
         self.log_message(f"Hoàn thành xử lý. Tạo được {len(results)} ảnh dự đoán")

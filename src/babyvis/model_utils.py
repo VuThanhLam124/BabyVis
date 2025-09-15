@@ -246,15 +246,54 @@ def load_qwen_image_edit_gguf(
 
     # Else attempt from_pretrained (requires network at runtime)
     if filename is None:
-        # Provide a likely default filename; user can override via env
-        filename = "qwen-image-edit-q4_k_m.gguf"
-    llm = Llama.from_pretrained(
-        repo_id=repo_id,
-        filename=filename,
-        n_ctx=n_ctx,
-        n_threads=n_threads,
-        n_gpu_layers=n_gpu_layers,
-        chat_format=os.getenv("QWEN_CHAT_FORMAT", "qwen2_vl"),
-        logits_all=False,
-    )
-    return llm
+        # Try available filenames in order of preference (Q4_K_M is good balance of quality/size)
+        preferred_filenames = [
+            "Qwen_Image_Edit-Q4_K_M.gguf",  # Best balance
+            "Qwen_Image_Edit-Q4_K_S.gguf",  # Smaller
+            "Qwen_Image_Edit-Q5_K_M.gguf",  # Higher quality
+            "Qwen_Image_Edit-Q4_0.gguf",    # Alternative Q4
+            "Qwen_Image_Edit-Q3_K_M.gguf",  # Smaller model
+        ]
+        
+        # Try to use the first available filename
+        for pref_filename in preferred_filenames:
+            try:
+                print(f"🔍 Trying to load: {pref_filename}")
+                llm = Llama.from_pretrained(
+                    repo_id=repo_id,
+                    filename=pref_filename,
+                    n_ctx=n_ctx,
+                    n_threads=n_threads,
+                    n_gpu_layers=n_gpu_layers,
+                    chat_format=os.getenv("QWEN_CHAT_FORMAT", "qwen2_vl"),
+                    logits_all=False,
+                )
+                print(f"✅ Successfully loaded: {pref_filename}")
+                return llm
+            except Exception as e:
+                print(f"⚠️ Failed to load {pref_filename}: {e}")
+                continue
+        
+        # If all preferred files fail, raise informative error
+        raise RuntimeError(
+            f"Failed to load Qwen GGUF backend: None of the preferred files could be loaded from {repo_id}. "
+            f"Tried: {preferred_filenames}. Please check your internet connection or specify a local gguf_path."
+        )
+    
+    # User specified a custom filename
+    try:
+        llm = Llama.from_pretrained(
+            repo_id=repo_id,
+            filename=filename,
+            n_ctx=n_ctx,
+            n_threads=n_threads,
+            n_gpu_layers=n_gpu_layers,
+            chat_format=os.getenv("QWEN_CHAT_FORMAT", "qwen2_vl"),
+            logits_all=False,
+        )
+        return llm
+    except Exception as e:
+        raise RuntimeError(
+            f"Failed to load Qwen GGUF backend: No file found in {repo_id} that match {filename}. "
+            f"Error: {e}"
+        ) from e
