@@ -53,7 +53,7 @@ class BatchImageProcessor:
         print(message)
     
     def process_image_list(self, image_paths):
-        """Xử lý danh sách ảnh với log đầy đủ"""
+        """Xử lý danh sách ảnh với Qwen Image Edit - hiệu suất cao"""
         
         # Kiểm tra file tồn tại
         valid_paths = []
@@ -67,16 +67,21 @@ class BatchImageProcessor:
             self.log_message("Không có file hợp lệ để xử lý")
             return []
         
-        # Xử lý batch
+        # Xử lý batch với Qwen - tự động chọn backend tốt nhất
+        backend = os.getenv("QWEN_BACKEND", "auto")  # auto, qwen, qwen_gguf
+        
+        self.log_message(f"🚀 Bắt đầu xử lý với Qwen backend: {backend}")
+        
         results = batch_process_with_display(
             valid_paths,
             output_dir=self.config["output_directory"],
             delay_sec=self.config["delay_seconds"],
             generate_predictions=self.config["generate_predictions"],
-            backend="controlnet"  # Use stable ControlNet backend by default
+            backend=backend,  # Pure Qwen processing
+            save_channels=self.config.get("save_channels", False)
         )
         
-        self.log_message(f"Hoàn thành xử lý. Tạo được {len(results)} ảnh dự đoán")
+        self.log_message(f"✅ Hoàn thành xử lý Qwen. Tạo được {len(results)} ảnh dự đoán")
         return results
     
     def process_from_text_file(self, file_path):
