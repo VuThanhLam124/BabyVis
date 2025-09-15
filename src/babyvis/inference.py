@@ -9,9 +9,14 @@ import time
 import numpy as np
 from PIL import Image, ImageEnhance, ImageFilter
 from matplotlib import pyplot as plt
-from .model_utils import load_canny_pipeline
+from .model_utils import (
+    load_canny_pipeline,
+    load_qwen_image_edit,
+    load_qwen_image_edit_gguf,
+)
 from typing import List, Tuple, Optional, Dict, Any
 import torch
+import io, base64, re
 
 
 # Configuration constants for optimal settings
@@ -234,7 +239,10 @@ def generate_predict_enhanced(input_path: str,
                             width: int = 512,
                             height: int = 512,
                             use_freeu: bool = True,
-                            enhance_output: bool = True):
+                            enhance_output: bool = True,
+                            prompt_text: Optional[str] = None,
+                            negative_text: Optional[str] = None,
+                            ):
     """
     Enhanced image generation with optimal settings and post-processing.
 
@@ -268,15 +276,20 @@ def generate_predict_enhanced(input_path: str,
     convert_to_canny(input_path, canny_tmp, method=canny_method)
     canny_pil = Image.open(canny_tmp).convert("RGB")
 
-    # Get professional prompts
-    prompts = get_professional_baby_prompt(ethnicity)
+    # Get professional prompts (allow override)
+    if prompt_text is not None or negative_text is not None:
+        positive = prompt_text or get_professional_baby_prompt(ethnicity)["positive"]
+        negative = negative_text or get_professional_baby_prompt(ethnicity)["negative"]
+    else:
+        prompts = get_professional_baby_prompt(ethnicity)
+        positive, negative = prompts["positive"], prompts["negative"]
 
     print(f"📝 Using {num_inference_steps} steps, CFG scale {guidance_scale}")
 
     # Generate image with enhanced settings
     call_kwargs = dict(
-        prompt=prompts["positive"],
-        negative_prompt=prompts["negative"],
+        prompt=positive,
+        negative_prompt=negative,
         image=canny_pil,
         num_inference_steps=num_inference_steps,
         guidance_scale=guidance_scale,
@@ -325,11 +338,288 @@ def generate_predict_enhanced(input_path: str,
     # Save with high quality
     result_img.save(output_path, quality=95, optimize=True)
 
-    # Clean up temporary file
-    if os.path.exists(canny_tmp):
-        os.remove(canny_tmp)
 
-    print(f"✅ Enhanced image saved: {output_path}")
+# --- Qwen Image Edit integration ---
+def _default_qwen_instruction(ethnicity: str = "mixed ethnicity") -> str:
+    prompts = get_professional_baby_prompt(ethnicity)
+    # Fold the negative prompt into a natural instruction to avoid undesired artifacts
+    negative = re.sub(r"\s+", " ", prompts["negative"]).strip()
+    positive = re.sub(r"\s+", " ", prompts["positive"]).strip()
+    instr = (
+        f"Edit this ultrasound image into a photorealistic newborn baby portrait. "
+        f"Follow these quality requirements: {positive}. "
+        f"Avoid these issues: {negative}."
+    )
+    return instr
+
+
+def _decode_qwen_image(response: Any) -> Image.Image:
+    """
+    Try to decode an image returned by Qwen Image Edit remote code.
+    Supports PIL.Image, data URI, bytes/base64, or a file path.
+    """
+    # 1) Direct PIL image
+    if isinstance(response, Image.Image):
+        return response
+
+    # 2) Dict payloads
+    if isinstance(response, dict):
+        # Common keys to check
+        for key in ("image", "images", "output", "result"):
+            if key in response:
+                val = response[key]
+                if isinstance(val, Image.Image):
+                    return val
+                if isinstance(val, (bytes, bytearray)):
+                    return Image.open(io.BytesIO(val)).convert("RGB")
+                if isinstance(val, str):
+                    # try data URI or path
+                    if val.startswith("data:image/"):
+                        b64 = val.split(",", 1)[-1]
+                        return Image.open(io.BytesIO(base64.b64decode(b64))).convert("RGB")
+                    if os.path.exists(val):
+                        return Image.open(val).convert("RGB")
+        # Some remote codes may include a list
+        for key in ("images", "outputs"):
+            if key in response and isinstance(response[key], list) and response[key]:
+                return _decode_qwen_image(response[key][0])
+
+    # 3) String payloads
+    if isinstance(response, str):
+        if response.startswith("data:image/"):
+            b64 = response.split(",", 1)[-1]
+            return Image.open(io.BytesIO(base64.b64decode(b64))).convert("RGB")
+        if os.path.exists(response):
+            return Image.open(response).convert("RGB")
+
+    # 4) Bytes
+    if isinstance(response, (bytes, bytearray)):
+        return Image.open(io.BytesIO(response)).convert("RGB")
+
+    raise ValueError("Unable to decode edited image from Qwen response.")
+
+
+def generate_predict_qwen_edit(
+    input_path: str,
+    output_path: str,
+    ethnicity: str = "mixed ethnicity",
+    instruction: Optional[str] = None,
+    seed: Optional[int] = None,
+    use_cpu_fallback: bool = True,
+):
+    """
+    Generate an edited image using Qwen/Qwen-Image-Edit.
+
+    Args:
+        input_path: Path to input ultrasound image
+        output_path: Path to save edited image
+        ethnicity: Used to craft a high-quality instruction
+        instruction: Optional explicit instruction; if None, a default is created
+        seed: Optional RNG seed if supported by remote code
+        use_cpu_fallback: If loading fails on GPU, retry on CPU
+    """
+    if not os.path.exists(input_path):
+        raise FileNotFoundError(f"Không tìm thấy file: {input_path}")
+
+    instruction = instruction or _default_qwen_instruction(ethnicity)
+
+    # Load model/tokenizer
+    try:
+        tokenizer, model, device = load_qwen_image_edit()
+    except Exception as e:
+        if use_cpu_fallback and ("cuda" in str(e).lower() or "gpu" in str(e).lower()):
+            os.environ["FORCE_CPU"] = "1"
+            tokenizer, model, device = load_qwen_image_edit()
+        else:
+            raise
+
+    # Build Qwen-VL style query using trust_remote_code utilities
+    try:
+        query = tokenizer.from_list_format([
+            {"image": input_path},
+            {"text": instruction},
+        ])
+    except Exception:
+        # Fallback to raw instruction if tokenizer lacks helper
+        query = instruction
+
+    # Some Qwen remote codes accept a seed argument; handle gracefully if available
+    chat_kwargs = {}
+    if seed is not None:
+        chat_kwargs["seed"] = seed
+
+    # Perform edit
+    try:
+        response, _ = model.chat(tokenizer, query=query, history=None, **chat_kwargs)
+    except TypeError:
+        # If chat signature differs, call without extra kwargs
+        response, _ = model.chat(tokenizer, query=query, history=None)
+
+    # Decode result to PIL
+    edited = _decode_qwen_image(response)
+    edited = edited.convert("RGB")
+
+    # Save result
+    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+    edited.save(output_path, quality=95, optimize=True)
+    print(f"✅ Qwen Image Edit saved: {output_path}")
+
+
+def _encode_image_to_data_uri(path: str) -> str:
+    with open(path, 'rb') as f:
+        b64 = base64.b64encode(f.read()).decode('utf-8')
+    ext = os.path.splitext(path)[1].lower().lstrip('.') or 'png'
+    if ext == 'jpg':
+        ext = 'jpeg'
+    return f"data:image/{ext};base64,{b64}"
+
+
+def generate_predict_qwen_edit_gguf(
+    input_path: str,
+    output_path: str,
+    ethnicity: str = "mixed ethnicity",
+    seed: Optional[int] = None,
+    n_predict: int = 512,
+):
+    """
+    Use GGUF (llama.cpp) Qwen Image Edit. If the model returns an image (data URI
+    or path), save it. Otherwise, treat the response as an instruction and fall
+    back to the ControlNet pipeline using that instruction as an enhanced prompt.
+    """
+    if not os.path.exists(input_path):
+        raise FileNotFoundError(f"Không tìm thấy file: {input_path}")
+
+    try:
+        llm = load_qwen_image_edit_gguf()
+    except Exception as e:
+        raise RuntimeError(f"Failed to load Qwen GGUF backend: {e}")
+
+    # Compose a concise instruction
+    instruction = _default_qwen_instruction(ethnicity)
+    data_uri = _encode_image_to_data_uri(input_path)
+
+    # llama-cpp chat messages format with image content
+    messages = [
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": instruction},
+                {"type": "image_url", "image_url": {"url": data_uri}},
+            ],
+        }
+    ]
+
+    # Try chat.completions (preferred) then fallback to create_chat_completion
+    response_text = None
+    try:
+        out = llm.create_chat_completion(messages=messages, temperature=0.2, max_tokens=n_predict)
+        response_text = out.get("choices", [{}])[0].get("message", {}).get("content")
+    except TypeError:
+        try:
+            out = llm.chat_completions.create(messages=messages, temperature=0.2, max_tokens=n_predict)
+            response_text = out.choices[0].message.content
+        except Exception:
+            # Final fallback: plain completion with concatenated prompt
+            flat_prompt = instruction
+            out = llm(
+                prompt=flat_prompt,
+                max_tokens=n_predict,
+                temperature=0.2,
+            )
+            response_text = out.get("choices", [{}])[0].get("text")
+
+    if not response_text:
+        raise RuntimeError("Qwen GGUF returned empty response")
+
+    # If the model produced an image-like payload, attempt to decode
+    try:
+        maybe = response_text.strip()
+        if maybe.startswith("data:image/") or os.path.exists(maybe):
+            img = _decode_qwen_image(maybe)
+            img.save(output_path, quality=95, optimize=True)
+            print(f"✅ Qwen GGUF Image saved: {output_path}")
+            return
+        # Some models enclose JSON with keys like image/base64
+        if maybe.startswith("{") and maybe.endswith("}"):
+            import json
+            payload = json.loads(maybe)
+            img = _decode_qwen_image(payload)
+            img.save(output_path, quality=95, optimize=True)
+            print(f"✅ Qwen GGUF Image saved: {output_path}")
+            return
+    except Exception:
+        pass
+
+    # Fallback: treat response as instruction to improve ControlNet prompt
+    positive = f"{response_text}\n\n" + get_professional_baby_prompt(ethnicity)["positive"]
+    generate_predict_enhanced(
+        input_path=input_path,
+        output_path=output_path,
+        prompt_text=positive,
+        negative_text=get_professional_baby_prompt(ethnicity)["negative"],
+    )
+    print(f"ℹ️ Qwen GGUF returned text; used as enhanced prompt.")
+
+
+def generate_predict_auto(
+    input_path: str,
+    output_path: str,
+    backend: Optional[str] = None,
+    ethnicity: str = "mixed ethnicity",
+    **kwargs,
+):
+    """
+    Dispatch to Qwen Image Edit or the existing ControlNet-Canny pipeline.
+    Selects backend via arg or env USE_QWEN_IMAGE_EDIT=1.
+    """
+    # Priority: explicit backend, then env toggles
+    use_qwen = False
+    use_qwen_gguf = False
+    if backend:
+        bl = backend.lower()
+        use_qwen = bl in {"qwen", "qwen-image-edit", "qwen_image_edit"}
+        use_qwen_gguf = bl in {"qwen-gguf", "qwen_image_edit_gguf", "gguf"}
+    else:
+        env_qwen = os.getenv("USE_QWEN_IMAGE_EDIT", "").lower() in {"1", "true", "yes"}
+        env_gguf = os.getenv("USE_QWEN_GGUF", "").lower() in {"1", "true", "yes"}
+        use_qwen_gguf = env_gguf
+        use_qwen = env_qwen and not env_gguf
+
+    if use_qwen_gguf:
+        return generate_predict_qwen_edit_gguf(
+            input_path=input_path,
+            output_path=output_path,
+            ethnicity=ethnicity,
+            seed=kwargs.get("seed"),
+        )
+    elif use_qwen:
+        return generate_predict_qwen_edit(
+            input_path=input_path,
+            output_path=output_path,
+            ethnicity=ethnicity,
+            instruction=kwargs.get("instruction"),
+            seed=kwargs.get("seed"),
+        )
+    else:
+        return generate_predict_enhanced(
+            input_path=input_path,
+            output_path=output_path,
+            ethnicity=ethnicity,
+            num_inference_steps=kwargs.get("num_inference_steps", OPTIMAL_INFERENCE_STEPS),
+            guidance_scale=kwargs.get("guidance_scale", OPTIMAL_CFG_SCALE),
+            canny_method=kwargs.get("canny_method", "adaptive"),
+            control_strength=kwargs.get("control_strength", 0.8),
+            base_model_id=kwargs.get("base_model_id"),
+            controlnet_id=kwargs.get("controlnet_id"),
+            prefer_sdxl=kwargs.get("prefer_sdxl"),
+            seed=kwargs.get("seed", 42),
+            width=kwargs.get("width", 512),
+            height=kwargs.get("height", 512),
+            use_freeu=kwargs.get("use_freeu", True),
+            enhance_output=kwargs.get("enhance_output", True),
+        )
+
+    # No-op: backend dispatch returns after saving output
 
 
 def show_7_channels_auto(image_path: str, delay_sec: float = 2):
@@ -432,16 +722,21 @@ def batch_process_with_display(image_paths: List[str],
             print(f"⚠️ Error displaying channels: {e}")
             continue
 
-        # Generate enhanced prediction
+        # Generate prediction (Qwen Image Edit if enabled, else ControlNet)
         if generate_predictions:
             try:
                 filename = os.path.splitext(os.path.basename(image_path))[0]
                 output_path = os.path.join(output_dir, f"enhanced_baby_{filename}.png")
 
-                generate_predict_enhanced(
+                generate_predict_auto(
                     input_path=image_path,
                     output_path=output_path,
-                    **enhanced_settings
+                    ethnicity=enhanced_settings['ethnicity'],
+                    num_inference_steps=enhanced_settings['num_inference_steps'],
+                    guidance_scale=enhanced_settings['guidance_scale'],
+                    canny_method=enhanced_settings['canny_method'],
+                    use_freeu=enhanced_settings['use_freeu'],
+                    enhance_output=enhanced_settings['enhance_output'],
                 )
 
                 results.append(output_path)

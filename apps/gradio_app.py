@@ -8,6 +8,7 @@ import gradio as gr
 from PIL import Image
 from babyvis.inference import (
     generate_predict_enhanced,
+    generate_predict_auto,
     OPTIMAL_INFERENCE_STEPS,
     OPTIMAL_CFG_SCALE,
     enhanced_canny_detection,
@@ -61,13 +62,14 @@ def process_ultrasound(image):
     # Bước 3: Sinh ảnh em bé
     filename = os.path.splitext(os.path.basename(tmp_path))[0]
     out_path = os.path.join(OUTPUT_DIR, f"baby_{filename}.png")
-    generate_predict_enhanced(
+    # Auto-dispatch to Qwen Image Edit if USE_QWEN_IMAGE_EDIT=1, else ControlNet
+    generate_predict_auto(
         input_path=tmp_path,
         output_path=out_path,
+        ethnicity="mixed ethnicity",
         num_inference_steps=OPTIMAL_INFERENCE_STEPS,
         guidance_scale=OPTIMAL_CFG_SCALE,
         canny_method="adaptive",
-        ethnicity="mixed ethnicity"
     )
     baby_img = Image.open(out_path)
     gallery_imgs.append(baby_img)

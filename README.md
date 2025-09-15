@@ -36,6 +36,25 @@ BabyVis là một công cụ tạo ảnh em bé từ ảnh siêu âm dựa trên
   - SD v1.5: steps 40–60, CFG 7–9, control 0.7–1.0
   - SDXL: steps 30–40, CFG 5–7, control 0.6–0.9
 
+### Dùng Qwen Image Edit (Qwen/Qwen-Image-Edit)
+- Bật dùng Qwen Image Edit thay cho Stable Diffusion + ControlNet:
+  - `USE_QWEN_IMAGE_EDIT=1 python apps/gradio_app.py`
+  - hoặc trong batch: `USE_QWEN_IMAGE_EDIT=1 python apps/batch_processor.py`
+- Yêu cầu cài thêm thư viện: `transformers`, `accelerate`, `sentencepiece`, `safetensors` (đã thêm sẵn trong `requirements.txt`).
+- Ghi chú: Mã tải Qwen dùng `trust_remote_code=True` theo hướng dẫn từ Hugging Face. Đầu ra ảnh được decode tự động từ response của model.
+
+### Dùng bản nhẹ GGUF (QuantStack/Qwen-Image-Edit-GGUF)
+- Bật backend GGUF (chạy bằng llama.cpp, phù hợp CPU/GPU VRAM ~4GB):
+  - `USE_QWEN_GGUF=1 python apps/gradio_app.py`
+  - hoặc `USE_QWEN_GGUF=1 python apps/batch_processor.py`
+- Tuỳ chọn tải model:
+  - Dùng file cục bộ: đặt `QWEN_GGUF_PATH=/path/to/model.gguf`
+  - Hoặc để tự tải từ HF: `QWEN_GGUF_REPO=QuantStack/Qwen-Image-Edit-GGUF` và (tuỳ chọn) `QWEN_GGUF_FILENAME=qwen-image-edit-q4_k_m.gguf`
+- Tinh chỉnh hiệu năng/thông số thấp VRAM:
+  - `QWEN_N_GPU_LAYERS=12` (mặc định, 4GB VRAM nên để 8–16; đặt 0 để chạy CPU-only)
+  - `QWEN_N_THREADS=<số luồng CPU>`; `QWEN_N_CTX=2048`
+- Yêu cầu cài `llama-cpp-python` (đã có trong `requirements.txt`). Cần bản llama.cpp hỗ trợ multi-modal (VL). Nếu backend GGUF chỉ trả về văn bản thay vì ảnh, code sẽ tự động dùng văn bản đó làm prompt tăng cường cho ControlNet để vẫn tạo được ảnh.
+
 ## Cấu trúc thư mục (đã cơ cấu lại)
 - `src/babyvis/`: mã nguồn chính (inference, model_utils)
 - `apps/`: điểm chạy

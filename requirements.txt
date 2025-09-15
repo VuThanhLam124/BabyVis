@@ -5,3 +5,8 @@ numpy
 gradio
 matplotlib
 Pillow
+transformers>=4.41.0
+accelerate>=0.30.0
+sentencepiece
+safetensors
+llama-cpp-python>=0.2.80
