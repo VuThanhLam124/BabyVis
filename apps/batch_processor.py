@@ -99,7 +99,7 @@ if __name__ == "__main__":
         "samples/1B.png",
         "samples/1C.webp",
         "samples/3.png",
-        "samples/4.pjeg",  # intentionally invalid for logging demo
+        "samples/4.jpeg",
         "samples/5.jpeg",
         "samples/6.jpeg",
     ]
