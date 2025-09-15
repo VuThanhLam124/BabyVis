@@ -290,7 +290,30 @@ def generate_predict_enhanced(input_path: str,
     except Exception:
         pass
 
-    result = pipe(**call_kwargs)
+    try:
+        result = pipe(**call_kwargs)
+    except Exception as e:
+        err_msg = str(e).lower()
+        print(f"⚠️ Inference error on current device: {e}")
+        if any(k in err_msg for k in ["cuda", "cublas", "cudnn", "invalid device", "gpu"]):
+            print("↩️ Falling back to CPU and retrying...")
+            try:
+                # Force CPU for re-init
+                os.environ["FORCE_CPU"] = "1"
+                pipe = load_canny_pipeline(
+                    base_model_id=base_model_id,
+                    controlnet_id=controlnet_id,
+                    prefer_sdxl=prefer_sdxl,
+                    
+                )
+                # Replace RNG
+                call_kwargs["generator"] = torch.Generator(device=str(pipe.device)).manual_seed(seed)
+                result = pipe(**call_kwargs)
+            except Exception as e2:
+                print(f"❌ CPU fallback also failed: {e2}")
+                raise
+        else:
+            raise
 
     result_img = result.images[0]
 

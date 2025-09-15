@@ -18,6 +18,11 @@ BabyVis là một công cụ tạo ảnh em bé từ ảnh siêu âm dựa trên
 - Chạy: `python apps/batch_processor.py`
 - Kết quả: `outputs/batch/`; Log: `logs/batch.log`
 
+## Chạy trên CPU (khắc phục lỗi CUDA/cuBLAS)
+- Nếu gặp lỗi kiểu `libcublasLt.so.11`/`CUDA` hoặc chưa cài driver/phụ thuộc CUDA đúng bản:
+  - Tạm thời ép chạy CPU: `CUDA_VISIBLE_DEVICES="" python apps/batch_processor.py` hoặc `FORCE_CPU=1 python apps/batch_processor.py`
+  - Code có cơ chế tự fallback GPU→CPU nếu lỗi CUDA xảy ra trong lúc suy luận.
+
 ## Tuỳ chọn mô hình
 - Mặc định SD v1.5 + ControlNet Canny (CPU nếu không có GPU).
 - Có thể đổi sang SDXL qua biến môi trường hoặc override ID:

@@ -3,9 +3,17 @@ import torch
 
 
 def _select_device():
+    # Environment overrides
+    override = os.getenv("DEVICE")
+    if override:
+        return override
+    if (os.getenv("FORCE_CPU", "").lower() in {"1", "true", "yes"} or
+        os.getenv("CUDA_VISIBLE_DEVICES", None) in {"-1", ""}):
+        return "cpu"
+
     if torch.cuda.is_available():
         return "cuda"
-    if torch.backends.mps.is_available():
+    if hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
         return "mps"
     return "cpu"
 
