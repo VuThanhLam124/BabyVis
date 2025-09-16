@@ -1,4 +1,4 @@
-# BabyVis - GGUF Edition# 🤖 BabyVis - Qwen Edition# BabyVis — Tạo ảnh em bé từ ảnh siêu âm
+# BabyVis - GGUF Edition# BabyVis - GGUF Edition# 🤖 BabyVis - Qwen Edition# BabyVis — Tạo ảnh em bé từ ảnh siêu âm
 
 
 
@@ -6,200 +6,401 @@
 
 
 
-## 🚀 Quick Start**Dự đoán hình ảnh em bé từ siêu âm sử dụng Qwen Image Edit AI**BabyVis là một công cụ tạo ảnh em bé từ ảnh siêu âm dựa trên Stable Diffusion + ControlNet (Canny), kèm giao diện Gradio thân thiện và chế độ xử lý theo lô.
+## 🚀 Quick Start🤖 **AI-powered ultrasound to baby face visualization using Qwen Image Edit GGUF model**
 
 
 
-### Option 1: GPU 4GB VRAM
+### Option 1: App Interface (Recommended)
 
 ```bash
 
-./run_4gb.sh[![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://python.org)## Cài đặt
+./run_app.sh## 🚀 Quick Start**Dự đoán hình ảnh em bé từ siêu âm sử dụng Qwen Image Edit AI**BabyVis là một công cụ tạo ảnh em bé từ ảnh siêu âm dựa trên Stable Diffusion + ControlNet (Canny), kèm giao diện Gradio thân thiện và chế độ xử lý theo lô.
 
 ```
 
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)- Yêu cầu Python 3.9+
+Choose from:
+
+- 🖥️ **Desktop App** - Native GUI with drag & drop
+
+- 🌐 **Web Interface** - Browser-based interface ### Option 1: GPU 4GB VRAM
+
+- 📦 **Batch Processing** - Process multiple images
+
+- 🚀 **App Launcher** - GUI selector```bash
+
+
+
+### Option 2: Hardware-Specific Scripts./run_4gb.sh[![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://python.org)## Cài đặt
+
+
+
+**GPU 4GB VRAM:**```
+
+```bash
+
+./run_4gb.sh[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)- Yêu cầu Python 3.9+
+
+```
 
 ### Option 2: GPU 12GB VRAM  
 
-```bash- Cài thư viện:
+**GPU 12GB VRAM:**
+
+```bash```bash- Cài thư viện:
 
 ./run_12gb.sh
 
-```## 🚀 Tính năng  - `pip install -r requirements.txt`
+```./run_12gb.sh
 
 
 
-### Option 3: CPU Only
+**CPU Only:**```## 🚀 Tính năng  - `pip install -r requirements.txt`
 
 ```bash
 
-./run_cpu.sh- **🧠 Pure Qwen AI**: Sử dụng hoàn toàn Qwen Image Edit - loại bỏ ControlNet để hiệu suất tối ưu## Chạy nhanh (Gradio UI)
+./run_cpu.sh
 
 ```
 
-- **⚡ Auto-Detection**: Tự động chọn backend tốt nhất (GGUF hoặc Transformers)- Chạy giao diện: `python apps/gradio_app.py`
+### Option 3: CPU Only
 
 ## 📋 Requirements
 
-- **🔧 Adaptive VRAM**: Tự động tối ưu theo VRAM có sẵn (4GB personal → 10GB+ server)- Quy trình: Tải ảnh siêu âm → Nhấn “Bắt đầu xử lý” → Tải ảnh kết quả.
+```bash
 
 - Python 3.8+
 
-- For GPU: NVIDIA GPU with 4GB+ VRAM- **🎯 High Performance**: Tối ưu hóa cho tốc độ và chất lượng- Ảnh kết quả mặc định lưu tại: `outputs/gradio/`
+- For GPU: NVIDIA GPU with 4GB+ VRAM./run_cpu.sh- **🧠 Pure Qwen AI**: Sử dụng hoàn toàn Qwen Image Edit - loại bỏ ControlNet để hiệu suất tối ưu## Chạy nhanh (Gradio UI)
 
 - For CPU: 8GB+ RAM
 
-- **💻 Cross-Platform**: Hỗ trợ GPU CUDA, CPU, và các môi trường hybrid
+```
 
 ## 🔧 Setup
 
-## Xử lý theo lô (Batch)
+- **⚡ Auto-Detection**: Tự động chọn backend tốt nhất (GGUF hoặc Transformers)- Chạy giao diện: `python apps/gradio_app.py`
 
 1. **Clone the repository:**
 
-```bash## 📦 Cài đặt nhanh- Ảnh mẫu nằm trong `samples/`
+```bash## 📋 Requirements
 
 git clone <your-repo>
 
-cd BabyVis- Có thể chuẩn bị danh sách ảnh tại `data/image_list.txt` (mỗi dòng 1 đường dẫn)
+cd BabyVis- **🔧 Adaptive VRAM**: Tự động tối ưu theo VRAM có sẵn (4GB personal → 10GB+ server)- Quy trình: Tải ảnh siêu âm → Nhấn “Bắt đầu xử lý” → Tải ảnh kết quả.
 
 ```
 
-```bash- Chạy: `python apps/batch_processor.py`
+- Python 3.8+
 
 2. **Add ultrasound images:**
 
-```bash# Clone repo- Kết quả: `outputs/batch/`; Log: `logs/batch.log`
+```bash- For GPU: NVIDIA GPU with 4GB+ VRAM- **🎯 High Performance**: Tối ưu hóa cho tốc độ và chất lượng- Ảnh kết quả mặc định lưu tại: `outputs/gradio/`
 
 mkdir -p samples
 
-# Copy your ultrasound images to samples/ foldergit clone https://github.com/VuThanhLam124/BabyVis.git
+# Copy your ultrasound images to samples/ folder- For CPU: 8GB+ RAM
 
 ```
 
-cd BabyVis## Chạy trên CPU (khắc phục lỗi CUDA/cuBLAS)
+- **💻 Cross-Platform**: Hỗ trợ GPU CUDA, CPU, và các môi trường hybrid
 
-3. **Run with your preferred configuration:**
+3. **Run with your preferred interface:**
 
-```bash- Nếu gặp lỗi kiểu `libcublasLt.so.11`/`CUDA` hoặc chưa cài driver/phụ thuộc CUDA đúng bản:
+```bash## 🔧 Setup
 
-# For 4GB GPU
+# App interface (recommended)
 
-./run_4gb.sh# Tạo conda environment  - Tạm thời ép chạy CPU: `CUDA_VISIBLE_DEVICES="" python apps/batch_processor.py` hoặc `FORCE_CPU=1 python apps/batch_processor.py`
+./run_app.sh## Xử lý theo lô (Batch)
 
 
 
-# For 12GB GPU  conda create -n babyvis python=3.9 -y  - Code có cơ chế tự fallback GPU→CPU nếu lỗi CUDA xảy ra trong lúc suy luận.
+# Or specific hardware config1. **Clone the repository:**
 
-./run_12gb.sh
+./run_4gb.sh    # For 4GB GPU
 
-conda activate babyvis
+./run_12gb.sh   # For 12GB GPU  ```bash## 📦 Cài đặt nhanh- Ảnh mẫu nằm trong `samples/`
 
-# For CPU only
+./run_cpu.sh    # For CPU only
 
-./run_cpu.sh## Tuỳ chọn mô hình
+```git clone <your-repo>
 
-```
 
-# Cài đặt dependencies- Mặc định SD v1.5 + ControlNet Canny (CPU nếu không có GPU).
 
-## 📁 Project Structure
+## 📁 Project Structurecd BabyVis- Có thể chuẩn bị danh sách ảnh tại `data/image_list.txt` (mỗi dòng 1 đường dẫn)
 
-pip install -r requirements.txt- Có thể đổi sang SDXL qua biến môi trường hoặc override ID:
 
-```
 
-BabyVis/  - Ví dụ SDXL: 
+``````
+
+BabyVis/
+
+├── run_app.sh         # App interface launcher```bash- Chạy: `python apps/batch_processor.py`
 
 ├── run_4gb.sh         # GPU 4GB configuration
 
-├── run_12gb.sh        # GPU 12GB configuration  # Chạy ngay lập tức    - `PREFER_SDXL=1 python apps/gradio_app.py`
+├── run_12gb.sh        # GPU 12GB configuration  2. **Add ultrasound images:**
 
 ├── run_cpu.sh         # CPU configuration
 
+├── app_desktop.py     # Desktop GUI app```bash# Clone repo- Kết quả: `outputs/batch/`; Log: `logs/batch.log`
+
+├── app_web.py         # Web interface app
+
+├── app_launcher.py    # GUI app selectormkdir -p samples
+
+├── batch_processor.py # Batch processing
+
+├── model_downloader.py # Auto-download GGUF model# Copy your ultrasound images to samples/ foldergit clone https://github.com/VuThanhLam124/BabyVis.git
+
+├── samples/           # Input ultrasound images
+
+├── outputs/           # Generated baby faces```
+
+├── models/           # GGUF model storage (auto-created)
+
+└── src/babyvis/      # Core inference codecd BabyVis## Chạy trên CPU (khắc phục lỗi CUDA/cuBLAS)
+
+```
+
+3. **Run with your preferred configuration:**
+
+## 🖥️ App Interfaces
+
+```bash- Nếu gặp lỗi kiểu `libcublasLt.so.11`/`CUDA` hoặc chưa cài driver/phụ thuộc CUDA đúng bản:
+
+### Desktop App (app_desktop.py)
+
+- **Native GUI** with Tkinter# For 4GB GPU
+
+- **Drag & drop** image selection
+
+- **Real-time preview** of input/output./run_4gb.sh# Tạo conda environment  - Tạm thời ép chạy CPU: `CUDA_VISIBLE_DEVICES="" python apps/batch_processor.py` hoặc `FORCE_CPU=1 python apps/batch_processor.py`
+
+- **Progress bar** and status updates
+
+- **Save functionality** with file dialog
+
+
+
+### Web Interface (app_web.py)  # For 12GB GPU  conda create -n babyvis python=3.9 -y  - Code có cơ chế tự fallback GPU→CPU nếu lỗi CUDA xảy ra trong lúc suy luận.
+
+- **Browser-based** interface using Gradio
+
+- **Upload images** via web form./run_12gb.sh
+
+- **Live processing** with progress
+
+- **Download results** directlyconda activate babyvis
+
+- **Responsive design** for mobile/desktop
+
+# For CPU only
+
+### Batch Processing (batch_processor.py)
+
+- **Command-line** interface./run_cpu.sh## Tuỳ chọn mô hình
+
+- **Process entire** samples/ folder
+
+- **Automatic output** naming```
+
+- **Progress logging**
+
+# Cài đặt dependencies- Mặc định SD v1.5 + ControlNet Canny (CPU nếu không có GPU).
+
+## 🤖 Model Information
+
+## 📁 Project Structure
+
+- **Model**: Qwen_Image_Edit-Q4_K_M.gguf (7.5GB)
+
+- **Source**: QuantStack/Qwen-Image-Edit-GGUFpip install -r requirements.txt- Có thể đổi sang SDXL qua biến môi trường hoặc override ID:
+
+- **Auto-download**: Model downloads automatically on first run
+
+```
+
+## ⚙️ Hardware Configurations
+
+BabyVis/  - Ví dụ SDXL: 
+
+| Configuration | GPU Layers | VRAM Usage | RAM Usage | Speed |
+
+|---------------|------------|------------|-----------|-------|├── run_4gb.sh         # GPU 4GB configuration
+
+| 4GB GPU       | 20         | ~3.5GB     | ~4GB      | Fast  |
+
+| 12GB GPU      | 35         | ~11GB      | ~2GB      | Fastest |├── run_12gb.sh        # GPU 12GB configuration  # Chạy ngay lập tức    - `PREFER_SDXL=1 python apps/gradio_app.py`
+
+| CPU Only      | 0          | 0          | ~8GB      | Slower |
+
+├── run_cpu.sh         # CPU configuration
+
+## 🎯 Features
+
 ├── batch_processor.py # Main processing script./run_qwen_auto.sh    - Hoặc:
 
-├── model_downloader.py # Auto-download GGUF model
+- ✅ **Multiple interfaces** (Desktop, Web, Batch)
 
-├── samples/           # Input ultrasound images```      - `BASE_MODEL_ID="stabilityai/stable-diffusion-xl-base-1.0" \\
+- ✅ **Single GGUF model** (simplified)├── model_downloader.py # Auto-download GGUF model
 
-├── outputs/           # Generated baby faces
+- ✅ **Auto-download** from HuggingFace
+
+- ✅ **Hardware auto-detection**├── samples/           # Input ultrasound images```      - `BASE_MODEL_ID="stabilityai/stable-diffusion-xl-base-1.0" \\
+
+- ✅ **Real-time processing** with progress
+
+- ✅ **3 optimization profiles**├── outputs/           # Generated baby faces
+
+- ✅ **Simple configuration**
 
 ├── models/           # GGUF model storage (auto-created)         CONTROLNET_ID="diffusers/controlnet-canny-sdxl-1.0" \\
 
-└── src/babyvis/      # Core inference code
-
-```## 🎮 Cách sử dụng         python apps/gradio_app.py`
-
-
-
-## 🤖 Model Information- Các tham số gợi ý:
-
-
-
-- **Model**: Qwen_Image_Edit-Q4_K_M.gguf (7.5GB)### Chế độ tự động (Khuyến nghị)  - SD v1.5: steps 40–60, CFG 7–9, control 0.7–1.0
-
-- **Source**: QuantStack/Qwen-Image-Edit-GGUF
-
-- **Auto-download**: Model downloads automatically on first run```bash  - SDXL: steps 30–40, CFG 5–7, control 0.6–0.9
-
-
-
-## ⚙️ Hardware Configurations./run_qwen_auto.sh    # Tự động chọn backend tốt nhất
-
-
-
-| Configuration | GPU Layers | VRAM Usage | RAM Usage | Speed |```### Dùng Qwen Image Edit (Qwen/Qwen-Image-Edit)
-
-|---------------|------------|------------|-----------|-------|
-
-| 4GB GPU       | 20         | ~3.5GB     | ~4GB      | Fast  |- Bật dùng Qwen Image Edit thay cho Stable Diffusion + ControlNet:
-
-| 12GB GPU      | 35         | ~11GB      | ~2GB      | Fastest |
-
-| CPU Only      | 0          | 0          | ~8GB      | Slower |### Chế độ cụ thể  - `USE_QWEN_IMAGE_EDIT=1 python apps/gradio_app.py`
-
-
-
-## 🎯 Features```bash  - hoặc trong batch: `USE_QWEN_IMAGE_EDIT=1 python apps/batch_processor.py`
-
-
-
-- ✅ Single GGUF model (simplified)./run_qwen_gguf.sh         # Force GGUF (tương thích cao)- Yêu cầu cài thêm thư viện: `transformers`, `accelerate`, `sentencepiece`, `safetensors` (đã thêm sẵn trong `requirements.txt`).
-
-- ✅ Auto-download from HuggingFace
-
-- ✅ Hardware auto-detection./run_qwen_transformers.sh # Force Transformers (chất lượng cao)- Ghi chú: Mã tải Qwen dùng `trust_remote_code=True` theo hướng dẫn từ Hugging Face. Đầu ra ảnh được decode tự động từ response của model.
-
-- ✅ Batch processing
-
-- ✅ 3 optimization profiles./run_qwen_cpu.sh          # CPU only (máy yếu)
-
-- ✅ Simple configuration
-
-```### Dùng bản nhẹ GGUF (QuantStack/Qwen-Image-Edit-GGUF)
-
 ## 📊 Output
 
-- Bật backend GGUF (chạy bằng llama.cpp, phù hợp CPU/GPU VRAM ~4GB):
+└── src/babyvis/      # Core inference code
 
 Generated baby faces will be saved in the `outputs/` directory with filenames like:
 
-- `predicted_1.png`### Python API  - `USE_QWEN_GGUF=1 python apps/gradio_app.py`
+- `predicted_1.png````## 🎮 Cách sử dụng         python apps/gradio_app.py`
 
 - `predicted_2.png` 
 
-- etc.```python  - hoặc `USE_QWEN_GGUF=1 python apps/batch_processor.py`
+- etc.
 
 
+
+## 🛠️ Usage Examples## 🤖 Model Information- Các tham số gợi ý:
+
+
+
+### Desktop App
+
+1. Run `./run_app.sh` and choose "Desktop App"
+
+2. Click "Browse Image" to select ultrasound- **Model**: Qwen_Image_Edit-Q4_K_M.gguf (7.5GB)### Chế độ tự động (Khuyến nghị)  - SD v1.5: steps 40–60, CFG 7–9, control 0.7–1.0
+
+3. Choose hardware configuration
+
+4. Click "Generate Baby Face"- **Source**: QuantStack/Qwen-Image-Edit-GGUF
+
+5. Save result when processing complete
+
+- **Auto-download**: Model downloads automatically on first run```bash  - SDXL: steps 30–40, CFG 5–7, control 0.6–0.9
+
+### Web Interface
+
+1. Run `./run_app.sh` and choose "Web Interface"
+
+2. Open browser to http://localhost:7860
+
+3. Upload ultrasound image## ⚙️ Hardware Configurations./run_qwen_auto.sh    # Tự động chọn backend tốt nhất
+
+4. Configure settings
+
+5. Click "Generate" and download result
+
+
+
+### Batch Processing| Configuration | GPU Layers | VRAM Usage | RAM Usage | Speed |```### Dùng Qwen Image Edit (Qwen/Qwen-Image-Edit)
+
+1. Put ultrasound images in `samples/` folder
+
+2. Run `./run_app.sh` and choose "Batch Processing"|---------------|------------|------------|-----------|-------|
+
+3. All images processed automatically
+
+4. Check `outputs/` folder for results| 4GB GPU       | 20         | ~3.5GB     | ~4GB      | Fast  |- Bật dùng Qwen Image Edit thay cho Stable Diffusion + ControlNet:
+
+
+
+## 🛠️ Troubleshooting| 12GB GPU      | 35         | ~11GB      | ~2GB      | Fastest |
+
+
+
+### Model Download Issues| CPU Only      | 0          | 0          | ~8GB      | Slower |### Chế độ cụ thể  - `USE_QWEN_IMAGE_EDIT=1 python apps/gradio_app.py`
+
+```bash
+
+python3 -c "
+
+from model_downloader import ensure_model
+
+ensure_model()## 🎯 Features```bash  - hoặc trong batch: `USE_QWEN_IMAGE_EDIT=1 python apps/batch_processor.py`
+
+"
+
+```
+
+
+
+### Memory Issues- ✅ Single GGUF model (simplified)./run_qwen_gguf.sh         # Force GGUF (tương thích cao)- Yêu cầu cài thêm thư viện: `transformers`, `accelerate`, `sentencepiece`, `safetensors` (đã thêm sẵn trong `requirements.txt`).
+
+- Use CPU mode if GPU memory is insufficient
+
+- Close other applications to free RAM- ✅ Auto-download from HuggingFace
+
+- Try 4GB mode instead of 12GB mode
+
+- ✅ Hardware auto-detection./run_qwen_transformers.sh # Force Transformers (chất lượng cao)- Ghi chú: Mã tải Qwen dùng `trust_remote_code=True` theo hướng dẫn từ Hugging Face. Đầu ra ảnh được decode tự động từ response của model.
+
+### GUI Issues
+
+```bash- ✅ Batch processing
+
+# For desktop app, ensure tkinter is installed
+
+sudo apt-get install python3-tk  # Ubuntu/Debian- ✅ 3 optimization profiles./run_qwen_cpu.sh          # CPU only (máy yếu)
+
+
+
+# For web interface, check gradio installation- ✅ Simple configuration
+
+pip install gradio
+
+``````### Dùng bản nhẹ GGUF (QuantStack/Qwen-Image-Edit-GGUF)
+
+
+
+### CUDA Issues## 📊 Output
+
+```bash
+
+# Check CUDA availability- Bật backend GGUF (chạy bằng llama.cpp, phù hợp CPU/GPU VRAM ~4GB):
+
+python3 -c "
+
+import subprocessGenerated baby faces will be saved in the `outputs/` directory with filenames like:
+
+try:
+
+    result = subprocess.run(['nvidia-smi'], capture_output=True, text=True)- `predicted_1.png`### Python API  - `USE_QWEN_GGUF=1 python apps/gradio_app.py`
+
+    print(result.stdout)
+
+except:- `predicted_2.png` 
+
+    print('CUDA not available, will use CPU')
+
+"- etc.```python  - hoặc `USE_QWEN_GGUF=1 python apps/batch_processor.py`
+
+```
+
+
+
+## 📝 License
 
 ## 🛠️ Troubleshootingfrom babyvis.inference import generate_predict_auto- Tuỳ chọn tải model:
 
+See LICENSE file for details.
 
+
+
+## 🤝 Contributing
 
 ### Model Download Issues  - Dùng file cục bộ: đặt `QWEN_GGUF_PATH=/path/to/model.gguf`
 
+This is a simplified GGUF-only version focused on ease of use and performance with multiple interface options.
 ```bash
 
 python3 -c "# Tạo ảnh dự đoán  - Hoặc để tự tải từ HF: `QWEN_GGUF_REPO=QuantStack/Qwen-Image-Edit-GGUF` và (tuỳ chọn) `QWEN_GGUF_FILENAME=qwen-image-edit-q4_k_m.gguf`
