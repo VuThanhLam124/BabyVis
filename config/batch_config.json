@@ -1,7 +1,0 @@
-{
-  "delay_seconds": 0.25,
-  "output_directory": "outputs/batch",
-  "generate_predictions": true,
-  "save_channels": false,
-  "log_file": "logs/batch.log"
-}

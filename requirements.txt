@@ -1,12 +1,6 @@
-torch
-diffusers
+# BabyVis Requirements - Simplified for GGUF
+llama-cpp-python>=0.2.80
+Pillow>=8.0.0
 opencv-python
 numpy
 gradio
-matplotlib
-Pillow
-transformers>=4.41.0
-accelerate>=0.30.0
-sentencepiece
-safetensors
-llama-cpp-python>=0.2.80
