@@ -1,15 +1,24 @@
 from .inference import (
-    generate_predict_enhanced,
-    OPTIMAL_INFERENCE_STEPS,
-    OPTIMAL_CFG_SCALE,
-    enhanced_canny_detection,
-    batch_process_with_display,
+    process_ultrasound_image,
+    process_single_image,
+    batch_process_images,
+    get_model,
+)
+
+from .model_utils import (
+    create_model_4gb,
+    create_model_12gb,
+    create_model_cpu,
+    detect_vram,
 )
 
 __all__ = [
-    "generate_predict_enhanced",
-    "OPTIMAL_INFERENCE_STEPS",
-    "OPTIMAL_CFG_SCALE",
-    "enhanced_canny_detection",
-    "batch_process_with_display",
+    "process_ultrasound_image",
+    "process_single_image", 
+    "batch_process_images",
+    "get_model",
+    "create_model_4gb",
+    "create_model_12gb", 
+    "create_model_cpu",
+    "detect_vram",
 ]

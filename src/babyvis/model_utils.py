@@ -95,8 +95,10 @@ def ensure_model():
     # Import and run downloader
     print("🤖 Model not found, starting download...")
     try:
-        from model_downloader import ensure_model
-        if ensure_model():
+        import sys
+        sys.path.append(str(Path(__file__).parent.parent.parent))
+        from model_downloader import ensure_model as download_model
+        if download_model():
             return str(model_path)
         else:
             raise RuntimeError("Failed to download model")
