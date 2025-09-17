@@ -13,7 +13,7 @@ import time
 # Model configuration
 MODEL_URL = "https://huggingface.co/QuantStack/Qwen-Image-Edit-GGUF/resolve/main/Qwen_Image_Edit-Q4_K_M.gguf?download=true"
 MODEL_FILENAME = "Qwen_Image_Edit-Q4_K_M.gguf"
-MODELS_DIR = "models"
+MODELS_DIR = "ComfyUI/models/checkpoints"
 EXPECTED_SIZE_MB = 15000  # Approximately 15GB
 
 

@@ -4,6 +4,12 @@
 models/
 *.gguf
 
+# all file in output
+outputs/
+temp/
+tmp/
+*.log
+
 # Python
 __pycache__/
 *.py[cod]

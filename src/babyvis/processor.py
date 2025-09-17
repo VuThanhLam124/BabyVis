@@ -74,50 +74,86 @@ class OptimizedBabyVisProcessor:
         
         Args:
             model_variant: Model variant to load
-                - "default": Stable Diffusion (full model)
-                - "quantized": Quantized version (fp16)
+                - "default": Stable Diffusion 1.5 img2img
+                - "qwen": Qwen-Image-Edit (GGUF format)
+                - "instruct": InstructPix2Pix for image editing
+                - "controlnet": ControlNet for guided editing
+                - "realistic": Realistic Vision img2img
                 - "cpu": CPU-optimized version
         """
         try:
-            from diffusers import StableDiffusionPipeline
+            from diffusers import StableDiffusionImg2ImgPipeline, DiffusionPipeline, StableDiffusionInstructPix2PixPipeline
             from diffusers.utils import logging as diffusers_logging
             
             # Suppress diffusers warnings
             diffusers_logging.set_verbosity_error()
             
-            logger.info(f"Loading Stable Diffusion model (variant: {model_variant})...")
+            logger.info(f"Loading image editing model (variant: {model_variant})...")
             
-            # Model configuration based on variant - using stable diffusion as fallback
+            # Image editing model configurations
             model_configs = {
                 "default": {
                     "model_id": "runwayml/stable-diffusion-v1-5",
                     "torch_dtype": torch.float16 if self.device == "cuda" else torch.float32,
-                    "variant": None
+                    "variant": None,
+                    "use_safetensors": False,
+                    "pipeline": StableDiffusionImg2ImgPipeline
                 },
-                "quantized": {
-                    "model_id": "runwayml/stable-diffusion-v1-5",
-                    "torch_dtype": torch.float16,
-                    "variant": "fp16",
-                    "use_safetensors": True
+                "instruct": {
+                    "model_id": "timbrooks/instruct-pix2pix",
+                    "torch_dtype": torch.float16 if self.device == "cuda" else torch.float32,
+                    "variant": None,
+                    "use_safetensors": False,
+                    "pipeline": StableDiffusionInstructPix2PixPipeline
+                },
+                "realistic": {
+                    "model_id": "SG161222/Realistic_Vision_V6.0_B1_noVAE",
+                    "torch_dtype": torch.float16 if self.device == "cuda" else torch.float32,
+                    "variant": None,
+                    "use_safetensors": False,
+                    "pipeline": StableDiffusionImg2ImgPipeline
+                },
+                "qwen": {
+                    "model_id": "Qwen/Qwen-Image-Edit",
+                    "torch_dtype": torch.float16 if self.device == "cuda" else torch.float32,
+                    "variant": None,
+                    "use_safetensors": False,
+                    "pipeline": DiffusionPipeline
                 },
                 "cpu": {
                     "model_id": "runwayml/stable-diffusion-v1-5", 
                     "torch_dtype": torch.float32,
-                    "variant": None
+                    "variant": None,
+                    "use_safetensors": False,
+                    "pipeline": StableDiffusionImg2ImgPipeline
                 }
             }
             
             config = model_configs.get(model_variant, model_configs["default"])
+            pipeline_class = config["pipeline"]
             
-            # Load pipeline
-            self.pipe = StableDiffusionPipeline.from_pretrained(
-                config["model_id"],
-                torch_dtype=config["torch_dtype"],
-                variant=config.get("variant"),
-                use_safetensors=config.get("use_safetensors", True),
-                low_cpu_mem_usage=True,
-                device_map="auto" if self.device == "cuda" else None
-            )
+            # Load pipeline for image editing
+            try:
+                self.pipe = pipeline_class.from_pretrained(
+                    config["model_id"],
+                    torch_dtype=config["torch_dtype"],
+                    variant=config.get("variant"),
+                    use_safetensors=config.get("use_safetensors", False),
+                    low_cpu_mem_usage=True,
+                    device_map="auto" if self.device == "cuda" else None,
+                    force_download=False,
+                    resume_download=True
+                )
+            except Exception as e:
+                logger.warning(f"Failed with main model, trying fallback: {e}")
+                # Fallback to default img2img
+                self.pipe = StableDiffusionImg2ImgPipeline.from_pretrained(
+                    "runwayml/stable-diffusion-v1-5",
+                    torch_dtype=config["torch_dtype"],
+                    use_safetensors=False,
+                    low_cpu_mem_usage=True,
+                    device_map="auto" if self.device == "cuda" else None
+                )
             
             # Apply optimizations
             if self.device == "cuda":
@@ -163,19 +199,21 @@ class OptimizedBabyVisProcessor:
     def process_ultrasound_to_baby(
         self, 
         input_image: Union[str, Image.Image],
-        prompt: str = "professional newborn baby photography, sleeping peacefully, soft natural lighting, ultra realistic, high detail, studio quality, beautiful skin texture",
-        num_inference_steps: int = 35,
-        guidance_scale: float = 8.5,
+        prompt: str = "transform this ultrasound image into a realistic newborn baby face, cute baby portrait, soft lighting, peaceful sleeping pose",
+        num_inference_steps: int = 25,
+        guidance_scale: float = 7.5,
+        strength: float = 0.8,  # Image editing strength
         output_size: tuple = (512, 512)
     ) -> Optional[Image.Image]:
         """
-        Process ultrasound image to baby face using text-to-image generation
+        Process ultrasound image to baby face using image-to-image editing
         
         Args:
-            input_image: Input ultrasound image (path or PIL Image) - used for guidance
+            input_image: Input ultrasound image (path or PIL Image)
             prompt: Text prompt for transformation
-            num_inference_steps: Number of denoising steps (lower = faster)
-            guidance_scale: Guidance scale (lower = faster)
+            num_inference_steps: Number of denoising steps
+            guidance_scale: Guidance scale
+            strength: How much to transform the original image (0.0-1.0)
             output_size: Output image size
             
         Returns:
@@ -186,33 +224,69 @@ class OptimizedBabyVisProcessor:
             return None
         
         try:
-            # Load and preprocess input image (for analysis/guidance)
+            # Load and preprocess input image
             if isinstance(input_image, str):
                 image = Image.open(input_image).convert('RGB')
             else:
                 image = input_image.convert('RGB')
             
-            # Analyze input for enhanced prompt
-            enhanced_prompt = f"{prompt}, 8K resolution, award winning photography, masterpiece, incredibly detailed, perfect lighting, smooth skin, newborn portrait"
+            # Resize image to target size
+            image = image.resize(output_size, Image.Resampling.LANCZOS)
             
-            logger.info(f"Processing with prompt: {enhanced_prompt}")
-            logger.info(f"Steps: {num_inference_steps}, Guidance: {guidance_scale}")
+            # Enhanced prompt for image editing
+            if hasattr(self.pipe, 'image') or 'Img2Img' in str(type(self.pipe)):
+                # For img2img pipelines
+                enhanced_prompt = f"{prompt}, beautiful newborn baby, soft skin, natural lighting, highly detailed, realistic"
+                negative_prompt = "adult, distorted, ugly, deformed, blurry, low quality, dark, grainy"
+            elif hasattr(self.pipe, 'edit_instruction') or 'InstructPix2Pix' in str(type(self.pipe)):
+                # For InstructPix2Pix
+                enhanced_prompt = f"Transform this ultrasound into a realistic baby face: {prompt}"
+                negative_prompt = "blurry, distorted, low quality"
+            else:
+                # Fallback
+                enhanced_prompt = prompt
+                negative_prompt = "low quality, distorted"
+            
+            logger.info(f"Image editing with prompt: {enhanced_prompt}")
+            logger.info(f"Steps: {num_inference_steps}, Guidance: {guidance_scale}, Strength: {strength}")
             
             # Clear memory before inference
             if self.device == "cuda":
                 torch.cuda.empty_cache()
                 gc.collect()
             
-            # Generate baby face using text-to-image
+            # Generate baby face using image-to-image
             with torch.inference_mode():
-                result = self.pipe(
-                    prompt=enhanced_prompt,
-                    num_inference_steps=num_inference_steps,
-                    guidance_scale=guidance_scale,
-                    height=output_size[1],
-                    width=output_size[0],
-                    negative_prompt="adult, woman, man, teenager, child, wedding, group photo, multiple people, blurry, low quality, distorted, ugly, deformed, mutation, extra limbs, bad anatomy, scary, horror, cartoon, anime, drawing, painting, sketch, low resolution, pixelated, noise, grainy, dark, underexposed, overexposed"
-                )
+                if hasattr(self.pipe, 'image') or 'Img2Img' in str(type(self.pipe)):
+                    # Standard img2img pipeline
+                    result = self.pipe(
+                        prompt=enhanced_prompt,
+                        image=image,
+                        negative_prompt=negative_prompt,
+                        num_inference_steps=num_inference_steps,
+                        guidance_scale=guidance_scale,
+                        strength=strength,
+                        generator=torch.Generator(device=self.device).manual_seed(42)
+                    )
+                elif hasattr(self.pipe, 'edit_instruction') or 'InstructPix2Pix' in str(type(self.pipe)):
+                    # InstructPix2Pix pipeline
+                    result = self.pipe(
+                        prompt=enhanced_prompt,
+                        image=image,
+                        num_inference_steps=num_inference_steps,
+                        image_guidance_scale=guidance_scale,
+                        guidance_scale=guidance_scale,
+                        generator=torch.Generator(device=self.device).manual_seed(42)
+                    )
+                else:
+                    # Try as general pipeline with image input
+                    result = self.pipe(
+                        prompt=enhanced_prompt,
+                        image=image,
+                        num_inference_steps=num_inference_steps,
+                        guidance_scale=guidance_scale,
+                        generator=torch.Generator(device=self.device).manual_seed(42)
+                    )
             
             # Clear memory after inference
             if self.device == "cuda":
@@ -221,7 +295,7 @@ class OptimizedBabyVisProcessor:
             return result.images[0]
             
         except Exception as e:
-            logger.error(f"Processing failed: {e}")
+            logger.error(f"Image editing failed: {e}")
             if self.device == "cuda":
                 torch.cuda.empty_cache()
             return None
