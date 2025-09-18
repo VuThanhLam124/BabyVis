@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 """
 Advanced Baby Face Generation System for BabyVis
-Specialized prompts and techniques for realistic baby face generation from ultrasound
+Specia            "base": [
+                "peaceful sleeping baby portrait",
+                "adorable sleeping infant", 
+                "cute sleeping baby photograph",
+                "precious sleeping newborn image",
+                "sweet sleeping baby face"
+            ],rompts and techniques for realistic baby face generation from ultrasound
 Based on medical accuracy, genetic diversity, and YouTube tutorial best practices
 """
 
@@ -70,36 +76,36 @@ class AdvancedBabyFaceGenerator:
         
         # Expression-specific descriptors
         self.expression_descriptors = {
-            BabyExpression.PEACEFUL: "peaceful serene expression, calm relaxed face",
-            BabyExpression.SLEEPING: "sleeping baby, closed eyes, completely relaxed expression",
-            BabyExpression.ALERT: "alert baby expression, bright curious eyes, attentive look",
-            BabyExpression.YAWNING: "cute baby yawning, small open mouth, sleepy expression",
-            BabyExpression.SUCKING: "baby with sucking reflex, pursed lips, content expression"
+            BabyExpression.PEACEFUL: "peaceful serene expression, calm relaxed face, gently closed eyes, maintaining exact pose",
+            BabyExpression.SLEEPING: "sleeping baby, eyes completely closed, peaceful sleeping expression, same pose and angle, preserving original direction and orientation",
+            BabyExpression.ALERT: "alert baby expression, bright wide open eyes, attentive curious look, awake and engaged",
+            BabyExpression.YAWNING: "cute baby yawning, small open mouth, sleepy eyes, maintaining original position",
+            BabyExpression.SUCKING: "baby with sucking reflex, pursed lips, peaceful closed eyes, content sleeping expression, same orientation"
         }
     
     def _initialize_base_prompts(self) -> Dict[str, List[str]]:
         """Initialize base prompts for different quality levels"""
         return {
             "base": [
-                "sleeping newborn baby face, minimal hair",
-                "adorable sleeping infant portrait, gentle lighting", 
-                "cute sleeping baby photograph, sparse hair",
-                "precious sleeping newborn image, soft lighting",
-                "sweet sleeping baby face, little hair"
+                "beautiful newborn baby face",
+                "adorable infant portrait", 
+                "cute baby photograph",
+                "precious newborn image",
+                "sweet baby face"
             ],
             "enhanced": [
-                "stunning newborn baby portrait, sleeping peacefully, maintaining original pose and angle, gentle soft lighting, minimal hair",
-                "beautiful realistic baby face, sleeping baby, same position as original, soft lighting, sparse baby hair, peaceful expression",
-                "adorable sleeping newborn photograph, preserving original angle and pose, gentle illumination, little hair, serene expression",
-                "precious sleeping baby portrait, maintaining original positioning, soft natural lighting, minimal hair coverage",
-                "gorgeous sleeping infant face, same angle as source image, gentle lighting, sparse hair, peaceful slumber"
+                "beautiful healthy newborn baby portrait, soft natural skin, perfect proportions, sleeping peacefully with eyes completely closed, exact same pose and direction",
+                "adorable baby face, realistic features, deep peaceful sleeping expression, eyes fully closed, maintaining identical pose and orientation as source",
+                "cute newborn photograph, healthy baby skin, natural baby features, soft lighting, sleeping soundly with closed eyes, preserving original angle and direction",
+                "precious baby portrait, perfect baby proportions, peaceful sleeping expression with closed eyes, maintaining original head position and orientation",
+                "gorgeous infant face, healthy appearance, natural baby beauty, soft hospital lighting, sleeping baby with eyes closed, same pose as original image"
             ],
             "premium": [
-                "award-winning sleeping newborn baby photography, maintaining exact original pose and angle, ultra realistic, gentle lighting, minimal hair coverage",
-                "professional sleeping baby portrait studio, preserving original positioning, soft lighting, sparse hair, photorealistic detail",
-                "hospital-grade sleeping newborn photography, same angle as source, gentle illumination, little hair, artistic quality",
-                "master photographer sleeping baby portrait, maintaining original pose, soft lighting, minimal hair, stunning detail",
-                "world-class sleeping baby photography, preserving original angle, gentle lighting, sparse hair coverage, breathtaking realism"
+                "masterpiece award-winning newborn baby photography, ultra realistic 8K, medical grade perfection, sleeping peacefully with eyes completely closed, preserving exact original pose and direction",
+                "professional studio baby portrait, flawless lighting, photorealistic precision, artistic excellence, deep peaceful sleep with closed eyes, maintaining identical composition and orientation",
+                "world-class newborn photography, crystal clear baby features, museum quality detail, peaceful sleeping expression with eyes closed, exact same angle and direction as source",
+                "master photographer baby portrait, perfect skin texture, breathtaking realism, artistic mastery, sleeping soundly with closed eyes, preserving original head position and body orientation",
+                "legendary baby photography, ultra high definition, cinematic quality, professional perfection, peaceful sleeping baby with eyes closed, maintaining source image pose and direction"
             ]
         }
     
@@ -157,19 +163,27 @@ class AdvancedBabyFaceGenerator:
         """Quality enhancement terms for different levels"""
         return {
             "lighting": [
-                "soft gentle lighting, maintaining original pose",
-                "subtle natural lighting, preserving angle", 
-                "gentle diffused lighting, same position as source",
-                "soft warm lighting, minimal hair visible",
-                "gentle hospital lighting, sleeping baby position"
+                "soft natural hospital lighting",
+                "professional studio lighting", 
+                "warm medical photography lighting",
+                "gentle diffused lighting",
+                "optimal newborn photography lighting"
             ],
             "technical": [
                 "ultra high definition",
-                "8K resolution",
+                "8K resolution", 
                 "photorealistic detail",
                 "crystal clear image quality",
                 "professional photography quality",
-                "medical grade image clarity"
+                "medical grade image clarity",
+                "maintaining exact original pose and angle",
+                "preserving identical source image composition",
+                "same head position and orientation as input",
+                "keeping original baby position and direction",
+                "exact pose replication",
+                "identical facial orientation",
+                "preserving source image geometry",
+                "matching original head angle and body position"
             ],
             "artistic": [
                 "award-winning photography",
@@ -192,25 +206,29 @@ class AdvancedBabyFaceGenerator:
             
             # Expression negatives  
             "crying", "screaming", "angry expression", "sad face", "distressed", 
-            "scared expression", "frowning", "upset baby", "awake baby", "open eyes",
+            "scared expression", "frowning", "upset baby",
             
-            # Position and angle changes
-            "different angle", "changed position", "rotated pose", "different orientation",
-            "altered pose", "modified position", "turned head", "different perspective",
-            
-            # Hair-related negatives
-            "thick hair", "full hair", "abundant hair", "lots of hair", "long hair",
-            "curly hair", "wavy hair", "styled hair", "hair accessories",
-            
-            # Lighting negatives
-            "bright lighting", "harsh lighting", "strong light", "direct sunlight",
-            "dark lighting", "harsh shadows", "overexposed", "underexposed",
-            "poor lighting", "unnatural lighting", "dramatic lighting",
+            # Eyes and expression negatives - STRONG
+            "open eyes", "awake eyes", "bright eyes", "looking eyes", "alert eyes",
+            "wide eyes", "staring", "gazing", "eye contact", "eyes open",
+            "looking at camera", "looking at viewer", "direct gaze", "eye focus",
             
             # Technical quality negatives
             "blurry image", "low quality", "pixelated", "distorted features", 
             "deformed face", "unnatural proportions", "fake appearance",
             "artificial", "cartoon", "anime", "illustration", "painting",
+            "weird", "strange", "abnormal", "creepy", "scary", "disturbing",
+            "malformed", "disfigured", "mutated", "distorted", "warped",
+            
+            # Pose and composition negatives - STRONGER
+            "different angle", "changed position", "rotated head", "tilted face",
+            "different orientation", "modified pose", "altered composition",
+            "wrong angle", "shifted position", "turned head", "facing different direction",
+            "mirror image", "flipped horizontally", "reversed pose", "opposite direction",
+            
+            # Lighting negatives
+            "dark lighting", "harsh shadows", "overexposed", "underexposed",
+            "poor lighting", "unnatural lighting",
             
             # Medical negatives
             "medical devices", "tubes", "wires", "hospital equipment visible",
@@ -218,7 +236,9 @@ class AdvancedBabyFaceGenerator:
             
             # Abnormal features
             "extra limbs", "missing features", "asymmetrical face", 
-            "disproportionate features", "unrealistic anatomy"
+            "disproportionate features", "unrealistic anatomy",
+            "deformity", "birth defect", "abnormal development",
+            "strange proportions", "weird anatomy", "unnatural body"
         ]
     
     def generate_advanced_prompt(
@@ -348,6 +368,50 @@ class AdvancedBabyFaceGenerator:
         
         return positive_prompt, negative_prompt
     
+    def generate_safe_baby_prompt(
+        self,
+        quality_level: str = "enhanced"
+    ) -> Tuple[str, str]:
+        """
+        Generate very safe prompts focused on healthy, normal baby appearance
+        """
+        
+        safe_prompts = [
+            "beautiful healthy newborn baby, perfect normal proportions, soft natural skin",
+            "adorable baby portrait, healthy appearance, gentle peaceful expression",
+            "cute newborn photograph, normal baby features, soft lighting",
+            "precious healthy baby, perfect proportions, natural baby beauty"
+        ]
+        
+        base_prompt = random.choice(safe_prompts)
+        
+        # Safe enhancement terms
+        safe_enhancements = [
+            "healthy normal baby",
+            "perfect baby proportions", 
+            "natural baby features",
+            "soft baby skin",
+            "gentle peaceful expression",
+            "beautiful baby portrait",
+            "professional baby photography"
+        ]
+        
+        # Very strong negative prompts to prevent deformity
+        strong_negatives = [
+            "deformed", "malformed", "disfigured", "mutated", "distorted", "warped",
+            "abnormal", "weird", "strange", "creepy", "scary", "disturbing",
+            "extra limbs", "missing limbs", "wrong proportions", "unnatural",
+            "cartoon", "anime", "illustration", "fake", "artificial",
+            "blurry", "low quality", "poor quality", "bad anatomy",
+            "birth defect", "deformity", "abnormal development"
+        ]
+        
+        prompt_components = [base_prompt] + random.sample(safe_enhancements, 3)
+        positive_prompt = ", ".join(prompt_components)
+        negative_prompt = ", ".join(strong_negatives)
+        
+        return positive_prompt, negative_prompt
+    
     def generate_variation_prompts(
         self,
         base_characteristics: Dict[str, any],
@@ -404,8 +468,8 @@ class AdvancedBabyFaceGenerator:
         # Default to mixed ethnicity for inclusive generation
         characteristics["ethnicity"] = EthnicityGroup.MIXED
         
-        # Default to peaceful expression
-        characteristics["expression"] = BabyExpression.PEACEFUL
+        # Default to sleeping expression for peaceful babies
+        characteristics["expression"] = BabyExpression.SLEEPING
         
         return characteristics
     
@@ -420,6 +484,131 @@ class AdvancedBabyFaceGenerator:
             "quality_level": "Optimized for professional hospital-grade photography standards",
             "genetic_realism": "Incorporates realistic genetic diversity and family characteristics"
         }
+    
+    def generate_anatomy_focused_prompt(
+        self,
+        quality_level: str = "enhanced",
+        ethnicity: Optional[EthnicityGroup] = None,
+        custom_bed_description: str = "wide comfortable bed"
+    ) -> Tuple[str, str]:
+        """
+        Generate prompt with strong focus on correct anatomy and bed setting
+        
+        Args:
+            quality_level: Quality preset level
+            ethnicity: Optional ethnicity specification
+            custom_bed_description: Description of bed setting
+            
+        Returns:
+            Tuple of (positive_prompt, negative_prompt)
+        """
+        
+        # Anatomy-focused base prompts
+        anatomy_prompts = [
+            f"sleeping newborn baby on {custom_bed_description}, maintaining original angle and pose",
+            f"peaceful baby lying on {custom_bed_description}, preserving source position", 
+            f"adorable sleeping infant on {custom_bed_description}, same angle as original image"
+        ]
+        
+        base_prompt = random.choice(anatomy_prompts)
+        
+        # Core anatomy requirements
+        anatomy_requirements = [
+            "two hands with exactly five fingers each",
+            "anatomically correct baby proportions",
+            "normal baby limb structure",
+            "proper hand positioning",
+            "realistic finger anatomy",
+            "correct newborn body proportions"
+        ]
+        
+        # Lighting and quality
+        quality_terms = [
+            "gentle soft lighting",
+            "minimal hair coverage", 
+            "peaceful sleeping expression",
+            "soft natural illumination"
+        ]
+        
+        prompt_components = [base_prompt] + anatomy_requirements + quality_terms
+        
+        # Add ethnicity if specified
+        if ethnicity and ethnicity in self.genetic_features:
+            ethnic_features = self.genetic_features[ethnicity]
+            prompt_components.append(random.choice(ethnic_features["skin_tone"]))
+        
+        # Enhanced negative prompts for anatomy
+        enhanced_negatives = self.negative_prompts + [
+            "three hands", "extra hands", "missing hands", "deformed hands",
+            "six fingers", "four fingers", "wrong finger count", "extra fingers",
+            "missing fingers", "malformed anatomy", "incorrect hand structure",
+            "floating limbs", "disconnected hands", "merged hands",
+            "narrow bed", "cramped space", "different angle", "changed position"
+        ]
+        
+        positive_prompt = ", ".join(prompt_components)
+        negative_prompt = ", ".join(enhanced_negatives)
+        
+        return positive_prompt, negative_prompt
+
+    def generate_strict_sleeping_prompt(self, quality_level: str = "enhanced") -> Tuple[str, str]:
+        """
+        Generate STRICT sleeping baby prompts with pose preservation
+        Specifically for cases where open eyes and pose changes are major issues
+        """
+        
+        # Super strict sleeping terms
+        strict_sleeping_terms = [
+            "sleeping baby with eyes completely closed",
+            "peaceful deep sleep with closed eyelids", 
+            "baby sleeping soundly, eyes fully shut",
+            "serene sleeping expression, eyes closed tight",
+            "baby in deep peaceful slumber, eyelids closed"
+        ]
+        
+        # Strict pose preservation terms
+        strict_pose_terms = [
+            "maintaining exact original pose and orientation",
+            "preserving identical head position and body angle", 
+            "keeping same facial direction as source image",
+            "matching original composition and positioning exactly",
+            "replicating source image pose and orientation perfectly"
+        ]
+        
+        # Build strict prompt
+        base_prompt = random.choice(self.base_prompts[quality_level])
+        sleeping_term = random.choice(strict_sleeping_terms)
+        pose_term = random.choice(strict_pose_terms)
+        
+        # Additional quality terms
+        quality_terms = random.sample(self.quality_enhancers.get("lighting", []), 2)
+        technical_terms = random.sample(self.quality_enhancers.get("technical", []), 3)
+        
+        prompt_parts = [
+            base_prompt,
+            sleeping_term, 
+            pose_term,
+        ] + quality_terms + technical_terms
+        
+        final_prompt = ", ".join(prompt_parts)
+        
+        # SUPER STRICT negative prompts
+        strict_negatives = self.negative_prompts + [
+            # Eyes - MULTIPLE VARIATIONS
+            "open eyes", "awake eyes", "bright eyes", "alert eyes", "staring eyes",
+            "wide eyes", "looking eyes", "gazing eyes", "eye contact", "eyes open",
+            "eyelids open", "visible pupils", "eye focus", "alert gaze", "awake look",
+            "bright gaze", "conscious eyes", "attentive eyes", "watchful eyes",
+            
+            # Pose changes - MULTIPLE VARIATIONS  
+            "different pose", "changed position", "altered orientation", "rotated head",
+            "tilted face", "different angle", "modified composition", "shifted position", 
+            "turned head", "facing different direction", "mirror image", "flipped pose",
+            "reversed orientation", "opposite direction", "different head position",
+            "changed facial direction", "altered body position", "rotated composition"
+        ]
+        
+        return final_prompt, ", ".join(strict_negatives)
 
 
 def main():

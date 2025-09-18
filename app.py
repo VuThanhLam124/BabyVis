@@ -61,13 +61,19 @@ app.add_middleware(
 # Global model instance (loaded on demand)
 model: Optional[QwenImageEditModel] = None
 
-def get_model() -> QwenImageEditModel:
+def get_model(model_name: Optional[str] = None) -> QwenImageEditModel:
     """Get or initialize the model instance"""
     global model
-    if model is None:
-        logger.info("Initializing Qwen-Image-Edit model...")
-        logger.info(f"🔁 Provider: {SETTINGS.model_provider} | Model: {SETTINGS.qwen_model_id}")
-        model = QwenImageEditModel(settings=SETTINGS)
+    if model is None or model_name:
+        # If model_name is provided, use it; otherwise use default
+        effective_model = model_name or SETTINGS.qwen_model_id
+        logger.info(f"Initializing model: {effective_model}")
+        
+        # Create new settings with the selected model
+        from config import build_settings
+        temp_settings = build_settings(qwen_model_id=effective_model)
+        
+        model = QwenImageEditModel(settings=temp_settings)
     return model
 
 @app.on_event("startup")
@@ -238,7 +244,13 @@ async def home():
                                 </div>
                                 
                                 <div class="row g-3 mb-4">
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
+                                        <label for="modelSelect" class="form-label fw-semibold">AI Model</label>
+                                        <select class="form-select" id="modelSelect">
+                                        </select>
+                                        <small class="text-muted" id="modelInfo">Loading models...</small>
+                                    </div>
+                                    <div class="col-md-3">
                                         <label for="qualityLevel" class="form-label fw-semibold">Quality Level</label>
                                         <select class="form-select" id="qualityLevel">
                                             <option value="base">Base (Fast)</option>
@@ -246,12 +258,12 @@ async def home():
                                             <option value="premium">Premium (Best Quality)</option>
                                         </select>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <label for="steps" class="form-label fw-semibold">Steps: <span id="stepsValue">30</span></label>
                                         <input type="range" class="form-range" id="steps" min="15" max="50" value="30">
                                         <small class="text-muted">Higher = better quality but slower</small>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <label for="strength" class="form-label fw-semibold">Strength: <span id="strengthValue">0.8</span></label>
                                         <input type="range" class="form-range" id="strength" min="0.3" max="1.0" step="0.1" value="0.8">
                                         <small class="text-muted">Higher = more transformation</small>
@@ -343,6 +355,55 @@ async def home():
             const statusText = document.getElementById('statusText');
             const validationInfo = document.getElementById('validationInfo');
             const generationInfo = document.getElementById('generationInfo');
+            const modelSelect = document.getElementById('modelSelect');
+            const modelInfo = document.getElementById('modelInfo');
+            
+            let availableModels = [];
+            
+            // Load available models on page load
+            async function loadModels() {
+                try {
+                    const response = await fetch('/models');
+                    const data = await response.json();
+                    availableModels = data.models || [];
+                    
+                    modelSelect.innerHTML = '';
+                    availableModels.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model.id;
+                        option.textContent = `${model.name} (Quality: ${model.quality}/10)`;
+                        // Set default model
+                        if (model.is_default) {
+                            option.selected = true;
+                        }
+                        modelSelect.appendChild(option);
+                    });
+                    
+                    updateModelInfo();
+                    modelInfo.textContent = 'Models loaded successfully';
+                } catch (error) {
+                    console.error('Error loading models:', error);
+                    modelInfo.textContent = 'Error loading models: ' + error.message;
+                }
+            }
+            
+            // Update model info when selection changes
+            function updateModelInfo() {
+                const selectedValue = modelSelect.value;
+                if (selectedValue && availableModels.length > 0) {
+                    const selectedModel = availableModels.find(m => m.id === selectedValue);
+                    if (selectedModel) {
+                        modelInfo.textContent = `Quality: ${selectedModel.quality}/10 • Speed: ${selectedModel.speed}/10 • VRAM: ${selectedModel.vram_gb}GB`;
+                    }
+                } else {
+                    modelInfo.textContent = 'Select a model';
+                }
+            }
+            
+            modelSelect.addEventListener('change', updateModelInfo);
+            
+            // Load models when page loads
+            loadModels();
             
             // Update slider values
             document.getElementById('steps').addEventListener('input', (e) => {
@@ -439,6 +500,7 @@ async def home():
                 
                 const formData = new FormData();
                 formData.append('file', fileInput.files[0]);
+                formData.append('model_name', modelSelect.value);
                 formData.append('quality_level', document.getElementById('qualityLevel').value);
                 formData.append('steps', document.getElementById('steps').value);
                 formData.append('strength', document.getElementById('strength').value);
@@ -492,7 +554,7 @@ async def home():
                         generationInfo.innerHTML = `
                             <div class="text-center">
                                 <strong>Generation Details:</strong><br>
-                                Model: ${data.model_used || 'Qwen-Image-Edit'}<br>
+                                Model: ${modelSelect.selectedOptions[0].textContent}<br>
                                 Quality: ${formData.get('quality_level')}<br>
                                 Processing time: ${data.processing_time || 'N/A'}<br>
                                 <small class="text-muted">${data.message}</small>
@@ -561,15 +623,49 @@ async def validate_image(file: UploadFile = File(...)):
             "size_mb": 0.0
         })
 
+@app.get("/models")
+async def get_available_models():
+    """Get list of available AI models"""
+    try:
+        from model_options import AVAILABLE_MODELS
+        
+        models_list = []
+        for model in AVAILABLE_MODELS:
+            models_list.append({
+                "id": model["id"],
+                "name": model["name"],
+                "quality": model["quality"],
+                "speed": model["speed"],
+                "vram_gb": model["vram_gb"],
+                "is_default": model["is_default"],
+                "description": model["description"]
+            })
+        
+        return JSONResponse({"models": models_list})
+        
+    except Exception as e:
+        logger.error(f"Error getting models: {e}")
+        return JSONResponse({"models": []})
+
 @app.post("/generate")
 async def generate_baby_face(
     file: UploadFile = File(...),
     quality_level: str = Form("enhanced"),
     steps: int = Form(30),
-    strength: float = Form(0.8)
+    strength: float = Form(0.8),
+    model_name: str = Form("SG161222/Realistic_Vision_V5.1_noVAE")
 ):
     """Generate baby face from ultrasound image"""
     start_time = datetime.now()
+    
+    # Validate and get proper model ID
+    from model_options import AVAILABLE_MODELS
+    valid_model_ids = [model["id"] for model in AVAILABLE_MODELS]
+    
+    # If model_name not in valid list, use default
+    if model_name not in valid_model_ids:
+        model_name = "SG161222/Realistic_Vision_V5.1_noVAE"
+        logger.warning(f"Invalid model name provided, using default: {model_name}")
     
     # Save uploaded file
     input_filename = f"ultrasound_{uuid.uuid4()}.{file.filename.split('.')[-1] if '.' in file.filename else 'jpg'}"
@@ -589,15 +685,17 @@ async def generate_baby_face(
         if not is_valid:
             logger.warning(f"Image validation warning: {validation_message}")
         
-        # Get model and generate baby face
-        model = get_model()
+        # Get model with selected model_name and generate baby face
+        model = get_model(model_name)
+        
+        logger.info(f"🤖 Using model: {model_name}")
         
         success, baby_image, message = model.generate_baby_face(
             ultrasound_image,
             quality_level=quality_level,
             num_inference_steps=steps,
             strength=strength,
-            guidance_scale=7.5
+            guidance_scale=10.0
         )
         
         if not success or baby_image is None:
@@ -648,9 +746,12 @@ async def download_file(filename: str):
     
     return FileResponse(
         path=file_path,
-        media_type='image/png',
+        media_type='application/octet-stream',
         filename=filename,
-        headers={"Content-Disposition": f"attachment; filename={filename}"}
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}",
+            "Content-Type": "application/octet-stream"
+        }
     )
 
 @app.get("/status")

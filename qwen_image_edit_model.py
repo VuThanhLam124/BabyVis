@@ -156,8 +156,18 @@ class QwenImageEditModel:
 
     def _load_diffusers_pipeline(self) -> bool:
         try:
+            # Check if FLUX model
+            if "flux" in self.model_id.lower():
+                from diffusers import FluxImg2ImgPipeline
+                logger.info(f"🚀 Loading FLUX model (Most Powerful): {self.model_id}")
+                self.pipeline = FluxImg2ImgPipeline.from_pretrained(
+                    self.model_id,
+                    torch_dtype=self.torch_dtype,
+                    use_safetensors=True,
+                    variant="fp16" if self.torch_dtype == torch.float16 else None
+                )
             # Check if SDXL model
-            if "xl" in self.model_id.lower():
+            elif "xl" in self.model_id.lower():
                 from diffusers import StableDiffusionXLImg2ImgPipeline
                 logger.info(f"🚀 Loading SDXL model: {self.model_id}")
                 self.pipeline = StableDiffusionXLImg2ImgPipeline.from_pretrained(
@@ -246,9 +256,9 @@ class QwenImageEditModel:
         self,
         ultrasound_image: Image.Image,
         quality_level: str = "enhanced",
-        num_inference_steps: int = 30,
-        guidance_scale: float = 7.5,
-        strength: float = 0.8,
+        num_inference_steps: int = 50,
+        guidance_scale: float = 8.0,
+        strength: float = 0.7,
         seed: Optional[int] = None,
         enable_medical_analysis: bool = True,
         gestational_age: Optional[str] = None,
@@ -333,13 +343,9 @@ class QwenImageEditModel:
                 }
                 expr_enum = expr_map.get(expression.lower(), BabyExpression.PEACEFUL)
             
-            # Generate advanced prompt
-            positive_prompt, negative_prompt = self.face_generator.generate_advanced_prompt(
-                quality_level=quality_level,
-                gestational_age=gest_age_enum,
-                ethnicity=ethnic_enum,
-                expression=expr_enum,
-                include_medical_accuracy=True
+            # Generate STRICT sleeping prompts to prevent eyes opening and pose changes
+            positive_prompt, negative_prompt = self.face_generator.generate_strict_sleeping_prompt(
+                quality_level=quality_level
             )
             
             analysis_data["prompts"] = {

@@ -8,7 +8,7 @@ class BabyVisSettings:
 
     def __init__(self):
         self.model_provider: Literal["diffusers", "gguf"] = os.getenv("BABYVIS_MODEL_PROVIDER", "diffusers")
-        self.qwen_model_id: str = os.getenv("QWEN_MODEL_ID", "SG161222/Realistic_Vision_V5.1_noVAE")
+        self.qwen_model_id: str = os.getenv("QWEN_MODEL_ID", "stabilityai/stable-diffusion-xl-base-1.0")
         self.device: str = os.getenv("BABYVIS_DEVICE", "auto")
         self.gguf_path: Optional[str] = os.getenv("BABYVIS_GGUF_PATH")
         self.gguf_quant: str = os.getenv("BABYVIS_GGUF_QUANT", "auto")

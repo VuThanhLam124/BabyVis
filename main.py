@@ -302,8 +302,8 @@ def main():
                        help="Check dependencies and exit")
     parser.add_argument("--list-models", action="store_true",
                        help="List available AI models and exit")
-    parser.add_argument("--model", choices=["sdxl", "realistic_vision", "dreamshaper", "sd15", "sdxl_turbo"],
-                       help="Choose AI model preset (sdxl=best quality, realistic_vision=balanced, sd15=fastest)")
+    parser.add_argument("--model", choices=["flux", "sdxl", "realistic_vision", "dreamshaper", "sd15", "sdxl_turbo"],
+                       help="Choose AI model preset (flux=most powerful, sdxl=best quality, realistic_vision=balanced, sd15=fastest)")
     parser.add_argument("--provider", choices=["diffusers", "gguf"],
                         help="Model provider backend (overrides BABYVIS_MODEL_PROVIDER)")
     parser.add_argument("--model-id",
