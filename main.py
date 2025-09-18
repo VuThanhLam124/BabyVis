@@ -8,7 +8,10 @@ import os
 import sys
 import argparse
 import logging
+from importlib import import_module
 from pathlib import Path
+
+from config import BabyVisSettings, configure_settings
 
 # Configure logging
 logging.basicConfig(
@@ -17,39 +20,94 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def check_dependencies():
+def check_dependencies(settings: BabyVisSettings) -> bool:
     """Check if all required dependencies are installed"""
-    required_packages = [
-        'torch',
-        'diffusers',
-        'transformers',
-        'fastapi',
-        'uvicorn',
-        'PIL',
-        'cv2',
-        'numpy'
-    ]
-    
-    missing_packages = []
-    
-    for package in required_packages:
-        try:
-            if package == 'PIL':
-                import PIL
-            elif package == 'cv2':
-                import cv2
-            else:
-                __import__(package)
-            logger.info(f"✅ {package} - OK")
-        except ImportError:
-            missing_packages.append(package)
-            logger.error(f"❌ {package} - Missing")
-    
-    if missing_packages:
-        logger.error(f"Missing packages: {', '.join(missing_packages)}")
-        logger.error("Please install missing packages using: pip install -r requirements.txt")
+    try:
+        from packaging import version
+    except ImportError:
+        logger.error("❌ packaging - Missing")
+        logger.error("Please install the required tools using: pip install -r requirements.txt")
         return False
-    
+
+    dependencies = [
+        {"name": "torch"},
+        {"name": "numpy"},
+        {"name": "PIL", "import_name": "PIL"},
+        {"name": "cv2", "import_name": "cv2"},
+        {"name": "pydantic", "import_name": "pydantic"},
+        {"name": "pydantic-settings", "import_name": "pydantic_settings"},
+        {"name": "fastapi"},
+        {"name": "uvicorn"},
+        {
+            "name": "huggingface_hub",
+            "import_name": "huggingface_hub",
+            "min_version": "0.19.4",
+            "max_version": "0.24.0",
+        },
+    ]
+
+    if settings.model_provider == "diffusers":
+        dependencies.extend(
+            [
+                {"name": "diffusers"},
+                {"name": "transformers"},
+                {"name": "accelerate"},
+            ]
+        )
+    else:
+        dependencies.extend(
+            [
+                {"name": "llama-cpp-python", "import_name": "llama_cpp"},
+                {"name": "gguf", "import_name": "gguf"},
+            ]
+        )
+
+    issues = []
+
+    for dep in dependencies:
+        module_name = dep.get("import_name", dep["name"])
+        try:
+            module = import_module(module_name)
+        except ImportError:
+            issues.append(f"{dep['name']} (missing)")
+            logger.error(f"❌ {dep['name']} - Missing")
+            continue
+
+        module_version = getattr(module, "__version__", None)
+        version_suffix = f" ({module_version})" if module_version else ""
+
+        if module_version:
+            min_version = dep.get("min_version")
+            max_version = dep.get("max_version")
+            parsed_version = version.parse(module_version)
+
+            if min_version and parsed_version < version.parse(min_version):
+                issues.append(
+                    f"{dep['name']} {module_version} (requires >= {min_version})"
+                )
+                logger.error(
+                    f"❌ {dep['name']} - Version {module_version} is too old (requires >= {min_version})"
+                )
+                continue
+
+            if max_version and parsed_version >= version.parse(max_version):
+                issues.append(
+                    f"{dep['name']} {module_version} (requires < {max_version})"
+                )
+                logger.error(
+                    f"❌ {dep['name']} - Version {module_version} exceeds supported range (< {max_version})"
+                )
+                continue
+
+        logger.info(f"✅ {dep['name']} - OK{version_suffix}")
+
+    if issues:
+        logger.error("Detected dependency issues:")
+        for issue in issues:
+            logger.error(f"   • {issue}")
+        logger.error("Please install/upgrade packages using: pip install -r requirements.txt")
+        return False
+
     logger.info("✅ All dependencies are available")
     return True
 
@@ -85,7 +143,7 @@ def run_web_app(host="0.0.0.0", port=8000, reload=False):
         logger.error(f"❌ Error running web application: {e}")
         sys.exit(1)
 
-def run_cli_mode():
+def run_cli_mode(settings: BabyVisSettings):
     """Run in CLI mode for batch processing"""
     try:
         from qwen_image_edit_model import QwenImageEditModel
@@ -128,7 +186,7 @@ def run_cli_mode():
         
         # Initialize model and generate
         print(f"\n🤖 Initializing model...")
-        model = QwenImageEditModel()
+        model = QwenImageEditModel(settings=settings)
         
         print(f"🎨 Generating baby face...")
         success, baby_image, result_message = model.generate_baby_face(
@@ -153,7 +211,7 @@ def run_cli_mode():
     except Exception as e:
         print(f"❌ CLI error: {e}")
 
-def run_test_mode():
+def run_test_mode(settings: BabyVisSettings):
     """Run test mode to verify everything works"""
     try:
         from qwen_image_edit_model import QwenImageEditModel
@@ -198,7 +256,7 @@ def run_test_mode():
         # Test model loading
         print("🤖 Testing model loading...")
         start_time = time.time()
-        model = QwenImageEditModel()
+        model = QwenImageEditModel(settings=settings)
         
         # Test generation (with minimal settings for speed)
         print("🎨 Testing baby face generation...")
@@ -242,18 +300,60 @@ def main():
                        help="Enable auto-reload for development")
     parser.add_argument("--check-deps", action="store_true",
                        help="Check dependencies and exit")
-    
+    parser.add_argument("--list-models", action="store_true",
+                       help="List available AI models and exit")
+    parser.add_argument("--model", choices=["sdxl", "realistic_vision", "dreamshaper", "sd15", "sdxl_turbo"],
+                       help="Choose AI model preset (sdxl=best quality, realistic_vision=balanced, sd15=fastest)")
+    parser.add_argument("--provider", choices=["diffusers", "gguf"],
+                        help="Model provider backend (overrides BABYVIS_MODEL_PROVIDER)")
+    parser.add_argument("--model-id",
+                        help="Hugging Face model ID for diffusers backend")
+    parser.add_argument("--device",
+                        help="Execution device override (cpu/cuda/auto)")
+    parser.add_argument("--gguf-path",
+                        help="Path to local GGUF file for gguf backend")
+    parser.add_argument("--gguf-quant",
+                        help="Preferred GGUF quantization tag (e.g. Q5_1)")
+    parser.add_argument("--disable-cpu-offload", action="store_true",
+                        help="Disable CPU offload even when available")
+
     args = parser.parse_args()
-    
+
     print("🍼 BabyVis - AI Baby Face Generator v2.0")
     print("=" * 50)
-    
+
+    # Handle list-models command
+    if args.list_models:
+        from model_options import list_models
+        list_models()
+        sys.exit(0)
+
+    overrides = {}
+    if args.provider:
+        overrides["model_provider"] = args.provider
+    if args.model:
+        from model_options import get_model_id
+        overrides["qwen_model_id"] = get_model_id(args.model)
+        print(f"🤖 Selected model: {args.model} ({overrides['qwen_model_id']})")
+    if args.model_id:
+        overrides["qwen_model_id"] = args.model_id
+    if args.device:
+        overrides["device"] = args.device
+    if args.gguf_path:
+        overrides["gguf_path"] = args.gguf_path
+    if args.gguf_quant:
+        overrides["gguf_quant"] = args.gguf_quant
+    if args.disable_cpu_offload:
+        overrides["disable_cpu_offload"] = True
+
+    settings = configure_settings(**overrides)
+
     # Check dependencies
     if args.check_deps or args.mode in ["web", "cli", "test"]:
         print("🔍 Checking dependencies...")
-        if not check_dependencies():
+        if not check_dependencies(settings):
             sys.exit(1)
-    
+
     if args.check_deps:
         print("✅ All dependencies are satisfied!")
         return
@@ -265,9 +365,9 @@ def main():
     if args.mode == "web":
         run_web_app(host=args.host, port=args.port, reload=args.reload)
     elif args.mode == "cli":
-        run_cli_mode()
+        run_cli_mode(settings)
     elif args.mode == "test":
-        run_test_mode()
+        run_test_mode(settings)
 
 if __name__ == "__main__":
     main()

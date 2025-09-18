@@ -25,7 +25,13 @@ class GGUFModelLoader:
     Supports various GGUF quantization levels and integrates with diffusers
     """
     
-    def __init__(self, model_id: str = "QuantStack/Qwen-Image-Edit-GGUF", device: str = "auto"):
+    def __init__(
+        self,
+        model_id: str = "QuantStack/Qwen-Image-Edit-GGUF",
+        device: str = "auto",
+        model_path: Optional[str] = None,
+        quantization: str = "auto",
+    ):
         self.model_id = model_id
         self.pipeline = None
         self.tokenizer = None
@@ -37,8 +43,8 @@ class GGUFModelLoader:
         
         # GGUF specific configurations
         self.gguf_config = {
-            "model_file": None,  # Will be auto-detected
-            "quantization": "auto",  # Q4_0, Q4_1, Q5_0, Q5_1, Q8_0, F16, F32
+            "model_file": model_path,  # Optional explicit path
+            "quantization": quantization,  # Q4_0, Q4_1, Q5_0, Q5_1, Q8_0, F16, F32
             "context_length": 4096,
             "n_gpu_layers": -1,  # Use all GPU layers if available
             "verbose": False
@@ -91,6 +97,11 @@ class GGUFModelLoader:
             return True
             
         try:
+            quantization = quantization or self.gguf_config.get("quantization", "auto")
+            model_file = model_file or self.gguf_config.get("model_file")
+            self.gguf_config["quantization"] = quantization
+            self.gguf_config["model_file"] = model_file
+
             logger.info(f"🚀 Loading GGUF model: {self.model_id}")
             logger.info(f"🎯 Target quantization: {quantization}")
             
@@ -443,7 +454,8 @@ class GGUFModelLoader:
             else:
                 generated_image = result
             
-            return True, generated_image, f"Image generated successfully with {self.model_id}"
+            quant = self.gguf_config.get("quantization", "auto")
+            return True, generated_image, f"Image generated successfully with {self.model_id} [{quant}]"
             
         except Exception as e:
             logger.error(f"❌ Generation failed: {e}")

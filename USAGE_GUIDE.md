@@ -1,154 +1,114 @@
-# 🍼 BabyVis - Hướng Dẫn Sử Dụng
+# 🍼 BabyVis Usage Guide (v2.1)
 
-## 🚀 Cách Sử Dụng Dự Án BabyVis
+This document walks you through installing BabyVis, choosing the generation backend highlighted in the Qwen Image Edit GGUF video, and running the app in web, CLI, or test mode.
 
-### 1. 🌐 Sử Dụng Web Interface (Khuyến nghị)
+## 1. Quick Start
 
-#### Khởi động web server:
 ```bash
-cd /home/ubuntu/DataScience/MyProject/BabyVis
+# 1. (optional) create/activate your Python env
+conda activate babyvis  # or source .venv/bin/activate
+
+# 2. install dependencies
+pip install -r requirements.txt
+
+# 3. launch the web UI (diffusers backend by default)
 python main.py --mode web
 ```
 
-#### Truy cập qua trình duyệt:
+Open `http://localhost:8000` in a browser, upload an ultrasound image, tune settings, and download the generated baby portrait.
+
+## 2. Choosing a Model Backend
+
+BabyVis now supports two backends, mirroring the workflow shown in the video:
+
+| Backend       | When to use | How it works |
+|---------------|-------------|--------------|
+| `diffusers` *(default)* | You want the official Qwen/Qwen-Image-Edit pipeline with automatic VRAM optimisations. | Downloads the Hugging Face diffusers pipeline, enables attention slicing, CPU offload, and VAE tiling for GPUs around 4 GB just like the tutorial setup with ComfyUI. |
+| `gguf`        | You have downloaded a local `QuantStack/Qwen-Image-Edit-GGUF` quantised file (Q4/Q5/Q8) and prefer to stay offline or use llama.cpp compatible runtimes. | Loads the GGUF file via `llama-cpp-python` and wraps it in a simple img2img interface. Falls back to the diffusers backend if the GGUF load fails. |
+
+### 2.1 Diffusers backend (default)
+
+Nothing to configure—just run `python main.py --mode web`. BabyVis will download the `Qwen/Qwen-Image-Edit` repo on the first launch and cache it in `~/.cache/huggingface`.
+
+### 2.2 GGUF backend (video workflow)
+
+1. **Download the GGUF file** (the video uses Q5/Q8). Example:
+   ```bash
+   huggingface-cli download \
+       QuantStack/Qwen-Image-Edit-GGUF \
+       Qwen-Image-Edit-Q5_1.gguf \
+       --local-dir models/gguf/qwen_image_edit
+   ```
+2. **Install llama.cpp bindings**:
+   ```bash
+   pip install llama-cpp-python gguf
+   ```
+3. **Launch BabyVis with GGUF**:
+   ```bash
+   BABYVIS_MODEL_PROVIDER=gguf \
+   BABYVIS_GGUF_PATH="models/gguf/qwen_image_edit/Qwen-Image-Edit-Q5_1.gguf" \
+   BABYVIS_GGUF_QUANT=Q5_1 \
+   python main.py --mode web
+   ```
+   BabyVis will attempt to use the GGUF loader; if it fails (e.g., missing dependencies) it automatically falls back to the diffusers pipeline and logs the reason.
+
+Tip: you can mix flags and environment variables, e.g. `python main.py --mode web --provider gguf --gguf-path ...`.
+
+## 3. Command-line Modes
+
+### 3.1 Web mode
+```bash
+python main.py --mode web [--host 0.0.0.0] [--port 8000] [--reload]
 ```
-http://localhost:8000
+
+### 3.2 CLI workflow
+```bash
+python main.py --mode cli
 ```
+Follow the prompts to pick a source ultrasound image and output filename.
 
-#### Tính năng web interface:
-- 📷 **Drag & Drop**: Kéo thả ảnh siêu âm vào vùng upload
-- 🎨 **Chọn Chất Lượng**: Base, Enhanced, Premium
-- ⚙️ **Điều Chỉnh Settings**: Steps, Guidance Scale, Strength
-- 💾 **Download Kết Quả**: Tải về ảnh baby face đã generate
-
-### 2. 🖥️ Sử Dụng Command Line
-
-#### Test model loading:
+### 3.3 Diagnostics / smoke test
 ```bash
 python main.py --mode test
 ```
+Creates a placeholder ultrasound, runs validation, loads the configured backend, performs a short generation, and saves `outputs/test_baby_face.png`.
 
-#### Generate baby face từ ảnh cụ thể:
+## 4. Dependency Management
+
+Run a dependency health check any time:
 ```bash
-python qwen_image_edit_model.py
+python main.py --check-deps [--provider gguf]
 ```
 
-### 3. 📝 Sử Dụng Python API
+If `diffusers` or other packages are missing, reinstall with `pip install -r requirements.txt`. For GGUF workflows also ensure `llama-cpp-python` and `gguf` are present.
 
-```python
-from qwen_image_edit_model import QwenImageEditModel
-from PIL import Image
+## 5. Environment Cheatsheet
 
-# Khởi tạo model (Diffusers)
-model = QwenImageEditModel()  # hoặc đặt env QWEN_MODEL_ID=Qwen/Qwen-Image-Edit
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `BABYVIS_MODEL_PROVIDER` | `diffusers` or `gguf`. | `diffusers` |
+| `QWEN_MODEL_ID` | Hugging Face repo ID (diffusers). | `Qwen/Qwen-Image-Edit` |
+| `BABYVIS_DEVICE` | `cuda`, `cpu`, or `auto`. | `auto` |
+| `BABYVIS_GGUF_PATH` | Local GGUF file path. | `None` |
+| `BABYVIS_GGUF_QUANT` | Quant tag (e.g. `Q5_1`). | `auto` |
+| `BABYVIS_DISABLE_CPU_OFFLOAD` | Set to `1` to keep the diffusers model fully on GPU/CPU without offload. | `0` |
 
-# Load model (tự tối ưu hóa 4GB VRAM)
-success = model.load_model()
+## 6. start.sh Helper
 
-if success:
-    ultrasound_image = Image.open("path/to/ultrasound.jpg")
-
-    success, baby_image, message = model.generate_baby_face(
-        ultrasound_image,
-        quality_level="enhanced",
-        num_inference_steps=25,
-        guidance_scale=7.5,
-        strength=0.8,
-        seed=42
-    )
-
-    if success:
-        baby_image.save("output/baby_face.png")
-        print(f"✅ Success: {message}")
-    else:
-        print(f"❌ Error: {message}")
-
-    model.unload_model()
+A simplified launcher is provided:
+```bash
+./start.sh --install --provider gguf --gguf-path models/gguf/qwen_image_edit/Qwen-Image-Edit-Q5_1.gguf
 ```
+Flags:
+- `--install` – upgrade pip and reinstall dependencies.
+- `--provider` – overrides the backend (`diffusers`/`gguf`).
+- `--python` / `--venv` – choose interpreter or activate an existing virtualenv.
 
-### 4. 🔧 Batch Generation (Multiple Variations)
+## 7. Troubleshooting
 
-```python
-# Generate multiple variations
-batch_success, variations, batch_message = model.batch_generate_professional(
-    ultrasound_image,
-    num_variations=3,
-    quality_level="enhanced",
-    num_inference_steps=30,
-    strength=0.8
-)
+- **Diffusers import error (`split_torch_state_dict_into_shards`)** – upgrade `huggingface-hub` `>=0.24 <0.37` using `pip install -r requirements.txt`.
+- **Missing `diffusers`** – install requirements or run `./start.sh --install`.
+- **GGUF loader fails** – check that the GGUF file exists and `llama-cpp-python` is built with CUDA (if desired). Review logs for the fallback message and confirm the diffusers backend is working.
+- **CUDA OOM** – lower steps/strength, keep CPU offload enabled, ensure input is 512×512.
 
-if batch_success:
-    for i, variation in enumerate(variations):
-        variation.save(f"output/baby_variation_{i+1}.png")
-```
-
-## ⚙️ Configuration Options
-
-### Quality Levels:
-- **🥉 Base**: Chất lượng cơ bản, xử lý nhanh
-- **🥈 Enhanced**: Chất lượng cao, cân bằng tốc độ/chất lượng  
-- **🥇 Premium**: Chất lượng tối đa, xử lý chậm nhưng kết quả tốt nhất
-
-### Parameters:
-- **num_inference_steps**: 15-50 (nhiều steps = chất lượng cao hơn)
-- **guidance_scale**: 1.0-20.0 (cao = tuân theo prompt chặt chẽ hơn)
-- **strength**: 0.1-1.0 (cao = biến đổi nhiều hơn)
-- **seed**: Number (để tạo kết quả reproducible)
-
-## 📁 File Structure
-
-```
-BabyVis/
-├── main.py                    # Entry point chính
-├── app.py                     # FastAPI web application  
-├── qwen_image_edit_model.py   # Diffusers model handler (Qwen/Qwen-Image-Edit)
-├── gguf_model_loader.py       # (Tùy chọn) GGUF placeholder – không cần dùng
-├── image_utils.py             # Image processing utilities
-├── requirements.txt           # Dependencies
-├── samples/                   # Sample ultrasound images
-├── outputs/                   # Generated baby faces
-└── uploads/                   # Uploaded files (web)
-```
-
-## 🔍 Troubleshooting
-
-### Vấn đề thường gặp:
-
-1. **Model loading failed**: 
-   - Kiểm tra internet connection (Hugging Face download)
-   - Đảm bảo đủ disk space (5–10GB cache)
-
-2. **CUDA out of memory**:
-   - Giảm `steps` (vd. 20–25), tăng `strength` vừa phải (0.7–0.85)
-   - Đảm bảo độ phân giải 512x512
-   - Giữ bật CPU offload/attention slicing (đã cấu hình sẵn)
-
-3. **Dependencies conflicts**:
-   ```bash
-   pip install --upgrade diffusers transformers huggingface-hub
-   ```
-
-### Log Files:
-- Model loading logs sẽ hiển thị trong terminal
-- Web server logs cho debugging
-
-## 🎯 Best Practices
-
-1. **💡 Chọn ảnh siêu âm chất lượng tốt**: Rõ nét, đủ sáng
-2. **⚙️ Bắt đầu với Enhanced quality**: Cân bằng tốc độ/chất lượng
-3. **🔄 Thử nhiều seeds khác nhau**: Để có variations đa dạng
-4. **📊 Monitor GPU memory**: Với RTX 3050 Ti 3.7GB
-5. **💾 Backup kết quả tốt**: Save các baby faces đẹp
-
-## 📞 Support
-
-Nếu gặp vấn đề:
-1. Kiểm tra terminal logs
-2. Đảm bảo dependencies đúng version
-3. Verify model files đã download hoàn toàn
-4. Check GPU memory usage
-
----
-
-**🎉 Chúc bạn sử dụng BabyVis thành công để tạo ra những baby faces đáng yêu từ ảnh siêu âm!**
+Happy baby-face generation! 🎨👶

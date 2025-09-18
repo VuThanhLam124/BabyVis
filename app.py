@@ -21,6 +21,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 from PIL import Image
+from config import get_settings
 from qwen_image_edit_model import QwenImageEditModel
 from image_utils import UltrasoundProcessor, BabyFaceProcessor, ImageValidator, ImageComposer
 
@@ -37,6 +38,9 @@ STATIC_DIR = Path("static")
 UPLOAD_DIR.mkdir(exist_ok=True)
 OUTPUT_DIR.mkdir(exist_ok=True)
 STATIC_DIR.mkdir(exist_ok=True)
+
+# Load settings once for the application lifetime
+SETTINGS = get_settings()
 
 # Initialize components
 app = FastAPI(
@@ -62,7 +66,8 @@ def get_model() -> QwenImageEditModel:
     global model
     if model is None:
         logger.info("Initializing Qwen-Image-Edit model...")
-        model = QwenImageEditModel()
+        logger.info(f"🔁 Provider: {SETTINGS.model_provider} | Model: {SETTINGS.qwen_model_id}")
+        model = QwenImageEditModel(settings=SETTINGS)
     return model
 
 @app.on_event("startup")
@@ -71,6 +76,7 @@ async def startup_event():
     logger.info("🍼 BabyVis starting up...")
     logger.info(f"📁 Upload directory: {UPLOAD_DIR}")
     logger.info(f"📁 Output directory: {OUTPUT_DIR}")
+    logger.info(f"⚙️ Model provider: {SETTINGS.model_provider}")
 
 @app.on_event("shutdown")
 async def shutdown_event():
